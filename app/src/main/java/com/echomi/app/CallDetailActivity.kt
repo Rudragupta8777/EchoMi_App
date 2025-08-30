@@ -10,22 +10,28 @@ import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.echomi.app.data.CallLog
 import com.echomi.app.network.RetrofitInstance
+import com.echomi.app.Adapter.TranscriptAdapter
 import kotlinx.coroutines.launch
-import kotlin.apply
-import kotlin.text.isNullOrEmpty
+import java.util.Date
 
 class CallDetailActivity : AppCompatActivity() {
 
     private var mediaPlayer: MediaPlayer? = null
     private val handler = Handler(Looper.getMainLooper())
+    private lateinit var transcriptAdapter: TranscriptAdapter
+    private lateinit var transcriptRecyclerView: RecyclerView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContentView(R.layout.activity_call_detail)
 
         val callId = intent.getStringExtra("CALL_ID")
@@ -40,7 +46,19 @@ class CallDetailActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         toolbar.setNavigationOnClickListener { finish() }
 
+        // Setup RecyclerView for transcript
+        setupTranscriptRecyclerView()
+
         fetchCallDetails(callId)
+    }
+
+    private fun setupTranscriptRecyclerView() {
+        transcriptRecyclerView = findViewById(R.id.transcriptRecyclerView)
+        transcriptAdapter = TranscriptAdapter()
+        transcriptRecyclerView.apply {
+            layoutManager = LinearLayoutManager(this@CallDetailActivity)
+            adapter = transcriptAdapter
+        }
     }
 
     private fun fetchCallDetails(callId: String) {
@@ -66,14 +84,28 @@ class CallDetailActivity : AppCompatActivity() {
     private fun bindDataToUi(log: CallLog) {
         findViewById<TextView>(R.id.callerNumberTextView).text = log.callerNumber
         findViewById<TextView>(R.id.summaryTextView).text = log.summary ?: "No summary provided."
-        findViewById<TextView>(R.id.dateTimeTextView).text = log.startTime // TODO: Format this date
+
+        // Format the date better
+        val formattedDate = try {
+            val date = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.getDefault()).parse(log.startTime)
+            java.text.SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", java.util.Locale.getDefault()).format(date ?: Date())
+        } catch (e: Exception) {
+            log.startTime.substring(0, 10) // fallback
+        }
+        findViewById<TextView>(R.id.dateTimeTextView).text = formattedDate
 
         // Setup the recording player if a URL exists
         if (!log.recordingUrl.isNullOrEmpty()) {
             setupMediaPlayer(log.recordingUrl)
         }
 
-        // TODO: Setup a RecyclerView and Adapter to display the transcript
+        // Display transcript
+        if (log.transcript.isNotEmpty()) {
+            transcriptAdapter.updateTranscript(log.transcript)
+            findViewById<TextView>(R.id.transcriptHeaderTextView)?.text = "Conversation Transcript (${log.transcript.size} messages)"
+        } else {
+            findViewById<TextView>(R.id.transcriptHeaderTextView)?.text = "No transcript available"
+        }
     }
 
     private fun setupMediaPlayer(url: String) {

@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.BatteryManager
+import android.util.Log
 import com.echomi.app.data.BatteryStatusRequest
 import com.echomi.app.network.RetrofitInstance
 import kotlinx.coroutines.CoroutineScope
@@ -18,13 +19,13 @@ class BatteryMonitorReceiver : BroadcastReceiver() {
             val batteryPct = level * 100 / scale.toFloat()
 
             // Send an update if battery is low
-            if (batteryPct < 20) {
+            if (batteryPct < 95) {
                 CoroutineScope(Dispatchers.IO).launch {
                     try {
-                        // This requires the AuthInterceptor to be set up
-                        RetrofitInstance.api.updateBatteryStatus(BatteryStatusRequest(batteryPct))
+                        val res = RetrofitInstance.api.updateBatteryStatus(BatteryStatusRequest(batteryPct))
+                        Log.d("BatteryUpdate", "Battery update response: ${res.code()} ${res.message()}")
                     } catch (e: Exception) {
-                        // Log error, but don't crash the app
+                        Log.e("BatteryUpdate", "Error sending battery update", e)
                     }
                 }
             }

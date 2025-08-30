@@ -13,6 +13,7 @@ import com.echomi.app.LoginActivity
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import com.echomi.app.R
+import com.google.android.material.button.MaterialButton
 import kotlin.jvm.java
 
 class ProfileFragment : Fragment() {
@@ -25,8 +26,8 @@ class ProfileFragment : Fragment() {
 
         val nameTextView: TextView = view.findViewById(R.id.nameTextView)
         val emailTextView: TextView = view.findViewById(R.id.emailTextView)
-        val manageContactsButton: Button = view.findViewById(R.id.manageContactsButton)
-        val logoutButton: Button = view.findViewById(R.id.logoutButton)
+        val manageContactsButton: MaterialButton = view.findViewById(R.id.manageContactsButton)
+        val logoutButton: MaterialButton = view.findViewById(R.id.logoutButton)
 
         val currentUser = Firebase.auth.currentUser
         nameTextView.text = currentUser?.displayName ?: "No Name"

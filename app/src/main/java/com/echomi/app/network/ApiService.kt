@@ -5,12 +5,14 @@ import com.echomi.app.data.CallLog
 import com.echomi.app.data.Contact
 import com.echomi.app.data.ContactRequest
 import com.echomi.app.data.FirebaseLoginRequest
+import com.echomi.app.data.MessageResponse
 import com.echomi.app.data.Prompt
 import com.echomi.app.data.UpdatePromptRequest
 import com.echomi.app.data.UserResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
@@ -51,6 +53,12 @@ interface ApiService {
     @GET("api/logs/{id}")
     suspend fun getCallLogById(@Path("id") id: String): Response<CallLog>
 
-    @POST("api/user/battery-status")
+    @PUT("api/settings/battery-status")
     suspend fun updateBatteryStatus(@Body request: BatteryStatusRequest): Response<Unit>
+
+    @PUT("api/settings/fcm-token")
+    suspend fun updateFcmToken(
+        @Body request: FcmTokenRequest,
+        @Header("Authorization") authToken: String
+    ): Response<MessageResponse>
 }

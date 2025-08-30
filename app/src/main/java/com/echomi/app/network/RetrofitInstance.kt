@@ -8,7 +8,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 object RetrofitInstance {
     // IMPORTANT: Replace with your ngrok URL during development
     // For production, this will be your deployed server's URL
-    private const val BASE_URL = "https://7965738e11d0.ngrok-free.app/"
+    private const val BASE_URL = "https://83be48ad4a3a.ngrok-free.app/"
 
     private val retrofit by lazy {
         val logging = HttpLoggingInterceptor()

@@ -11,6 +11,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.material.button.MaterialButton
 import kotlin.jvm.java
 
 class SetupActivity : AppCompatActivity() {
@@ -24,9 +25,9 @@ class SetupActivity : AppCompatActivity() {
         setContentView(R.layout.activity_setup)
 
         val twilioNumberTextView: TextView = findViewById(R.id.twilioNumberTextView)
-        val copyNumberButton: Button = findViewById(R.id.copyNumberButton)
-        val openSettingsButton: Button = findViewById(R.id.openSettingsButton)
-        val continueButton: Button = findViewById(R.id.continueButton)
+        val copyNumberButton: MaterialButton = findViewById(R.id.copyNumberButton)
+        val openSettingsButton: MaterialButton = findViewById(R.id.openSettingsButton)
+        val continueButton: MaterialButton = findViewById(R.id.continueButton)
 
         // Set the Twilio number in the UI
         twilioNumberTextView.text = twilioNumber

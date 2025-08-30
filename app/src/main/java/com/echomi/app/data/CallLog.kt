@@ -2,10 +2,12 @@ package com.echomi.app.data
 
 data class CallLog(
     val _id: String,
+    val userId: String,
     val callerNumber: String,
-    val summary: String?,
+    val callSid: String,
     val startTime: String,
-    val duration: Int,
-    val recordingUrl: String?,
-    val transcript: List<TranscriptEntry>?
+    val duration: Int = 0,
+    val summary: String? = null,
+    val recordingUrl: String? = null,
+    val transcript: List<TranscriptMessage> = emptyList()
 )

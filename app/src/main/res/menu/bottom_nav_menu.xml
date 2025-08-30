@@ -3,7 +3,7 @@
     <item
         android:id="@+id/callLogsFragment"
         android:icon="@drawable/call_log"
-        android:title="Logs" />
+        android:title="Calls" />
     <item
         android:id="@+id/assistantFragment"
         android:icon="@drawable/assistant"

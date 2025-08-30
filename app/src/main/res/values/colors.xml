@@ -5,4 +5,20 @@
     <color name="background">#CD000000</color>
     <color name="green">#29E33C</color>
     <color name="medium_gray">#BEFFFFFF</color>
+
+<!--    <color name="caller_color">#FF4081</color>-->
+<!--    <color name="ai_color">#2196F3</color>-->
+<!--    <color name="default_speaker_color">#757575</color>-->
+    <color name="primary_text_color">#212121</color>
+    <color name="secondary_text_color">#757575</color>
+    <color name="divider_color">#E0E0E0</color>
+
+    <color name="caller_bubble_color">#F0F0F0</color>
+    <color name="ai_bubble_color">#E3F2FD</color>
+    <color name="bubble_border_color">#E0E0E0</color>
+    <color name="caller_color">#2196F3</color>
+    <color name="ai_color">#4CAF50</color>
+    <color name="default_speaker_color">#757575</color>
+
+
 </resources>

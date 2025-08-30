@@ -5,6 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="24dp"
+    android:background="@color/background"
     tools:context=".SetupActivity">
 
     <TextView
@@ -12,9 +13,10 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="Final Step: Connect Your AI"
-        android:textSize="28sp"
+        android:textSize="26sp"
         android:textStyle="bold"
-        android:textColor="@android:color/black"
+        android:layout_marginTop="25dp"
+        android:textColor="@color/green"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
@@ -26,6 +28,7 @@
         android:layout_marginTop="8dp"
         android:text="Follow these steps to enable your personal assistant."
         android:textSize="16sp"
+        android:textColor="@color/white"
         app:layout_constraintTop_toBottomOf="@id/titleTextView"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
@@ -35,8 +38,11 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
-        app:cardCornerRadius="12dp"
         app:cardElevation="4dp"
+        app:cardCornerRadius="12dp"
+        app:strokeColor="#FFFFFF"
+        app:strokeWidth="1dp"
+        android:backgroundTint="#9DFFFFFF"
         app:layout_constraintTop_toBottomOf="@id/subtitleTextView"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
@@ -68,13 +74,16 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="+1 626-427-0085"
+                    android:textStyle="bold"
                     android:textSize="20sp"
-                    android:textColor="@color/design_default_color_primary"/>
+                    android:textColor="#94621717"/>
 
-                <Button
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/copyNumberButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:backgroundTint="#94621717"
+                    android:textColor="@color/white"
                     android:text="Copy"/>
             </LinearLayout>
         </LinearLayout>
@@ -87,6 +96,9 @@
         android:layout_marginTop="24dp"
         app:cardCornerRadius="12dp"
         app:cardElevation="4dp"
+        app:strokeColor="#FFFFFF"
+        app:strokeWidth="1dp"
+        android:backgroundTint="#9DFFFFFF"
         app:layout_constraintTop_toBottomOf="@id/step1Card"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
@@ -109,22 +121,27 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
+                android:textColor="#282A2C"
                 android:text="Tap below to open your phone's settings. Paste the number for 'When unanswered' or 'When busy'."/>
 
-            <Button
+            <com.google.android.material.button.MaterialButton
                 android:id="@+id/openSettingsButton"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
+                android:textColor="@color/white"
+                android:backgroundTint="#94621717"
                 android:text="Open Phone Settings"/>
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/continueButton"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="I've Set It Up, Continue"
+        android:textColor="@color/black"
+        android:backgroundTint="#FFFFFF"
         android:padding="16dp"
         android:textSize="16sp"
         app:layout_constraintBottom_toBottomOf="parent"
