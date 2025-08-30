@@ -1,5 +1,7 @@
 package com.echomi.app.Adapter
 
+import android.content.res.ColorStateList
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,10 +18,9 @@ import kotlin.collections.find
 
 class ContactsAdapter(
     private var displayedContacts: MutableList<Contact>,
-    private val fullContactList: List<Contact>, // A reference to the complete list
-    private val onRoleChanged: () -> Unit // A callback to notify the Activity to re-sort
-) :
-    RecyclerView.Adapter<ContactsAdapter.ContactViewHolder>(), Filterable {
+    private val fullContactList: List<Contact>, // Complete list
+    private val onRoleChanged: () -> Unit // Callback to re-sort/filter
+) : RecyclerView.Adapter<ContactsAdapter.ContactViewHolder>(), Filterable {
 
     class ContactViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val nameTextView: TextView = view.findViewById(R.id.contactNameTextView)
@@ -35,34 +36,52 @@ class ContactsAdapter(
 
     override fun onBindViewHolder(holder: ContactViewHolder, position: Int) {
         val contact = displayedContacts[position]
+
         holder.nameTextView.text = contact.name
         holder.numberTextView.text = contact.phoneNumber
 
+        // Avoid checkbox recycling issue
         holder.familyCheckBox.setOnCheckedChangeListener(null)
+
+        // Pre-check family contacts
         holder.familyCheckBox.isChecked = contact.role == "family"
+
+        // Green tick for checked contacts
+        holder.familyCheckBox.buttonTintList = if (holder.familyCheckBox.isChecked) {
+            ColorStateList.valueOf(Color.GREEN)
+        } else {
+            ColorStateList.valueOf(Color.WHITE)
+        }
 
         holder.familyCheckBox.setOnCheckedChangeListener { _, isChecked ->
             val originalContact = fullContactList.find { it.id == contact.id }
             originalContact?.role = if (isChecked) "family" else "default"
-            // Notify the activity that a change occurred so it can re-sort and re-filter
+
+            // Update tick color dynamically
+            holder.familyCheckBox.buttonTintList = if (isChecked) {
+                ColorStateList.valueOf(Color.GREEN)
+            } else {
+                ColorStateList.valueOf(Color.WHITE)
+            }
+
+            // Notify activity to re-sort/filter
             onRoleChanged()
         }
     }
 
     override fun getItemCount() = displayedContacts.size
 
+    // Returns only selected family contacts
     fun getCategorizedContacts(): List<Contact> {
         return fullContactList.filter { it.role == "family" }
     }
 
-    override fun getFilter(): Filter {
-        return contactFilter
-    }
+    override fun getFilter(): Filter = contactFilter
 
     private val contactFilter = object : Filter() {
         override fun performFiltering(constraint: CharSequence?): FilterResults {
             val filteredList = mutableListOf<Contact>()
-            val sourceList = ArrayList(fullContactList) // Use a copy of the full list
+            val sourceList = ArrayList(fullContactList)
 
             if (constraint.isNullOrEmpty()) {
                 filteredList.addAll(sourceList)
@@ -74,18 +93,17 @@ class ContactsAdapter(
                     }
                 }
             }
-            val results = FilterResults()
-            results.values = filteredList
-            return results
+
+            return FilterResults().apply { values = filteredList }
         }
 
         override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
             displayedContacts.clear()
             if (results?.values is List<*>) {
+                @Suppress("UNCHECKED_CAST")
                 displayedContacts.addAll(results.values as List<Contact>)
             }
             notifyDataSetChanged()
         }
     }
 }
-

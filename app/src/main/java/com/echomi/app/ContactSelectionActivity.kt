@@ -12,6 +12,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -54,6 +55,7 @@ class ContactSelectionActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContentView(R.layout.activity_contact_selection)
 
         recyclerView = findViewById(R.id.contactsRecyclerView)
@@ -112,28 +114,32 @@ class ContactSelectionActivity : AppCompatActivity() {
             try {
                 // Step 1: Fetch saved contacts from backend
                 val savedContactsResponse = RetrofitInstance.api.getSavedContacts()
-                val savedContacts = if (savedContactsResponse.isSuccessful) savedContactsResponse.body() ?: emptyList() else emptyList()
+                val savedContacts = if (savedContactsResponse.isSuccessful)
+                    savedContactsResponse.body() ?: emptyList()
+                else
+                    emptyList()
                 val savedPhoneNumbers = savedContacts.map { it.phoneNumber }.toSet()
 
-                // Step 2: Fetch all contacts from the phone
+                // Step 2: Load phone contacts
                 val phoneContacts = loadContactsFromPhone()
 
-                // Step 3: Merge the two lists
+                // Step 3: Merge backend saved contacts with phone contacts
                 phoneContacts.forEach { contact ->
                     if (contact.phoneNumber in savedPhoneNumbers) {
                         contact.role = "family"
                     }
                 }
 
-                // Step 4: Update UI on the main thread
+                // Step 4: Update UI
                 withContext(Dispatchers.Main) {
                     fullContactsList.clear()
                     fullContactsList.addAll(phoneContacts)
-                    sortAndFilterList() // Sort and display the merged list
+                    sortAndFilterList()
                 }
+
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@ContactSelectionActivity, "Error loading contacts: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@ContactSelectionActivity, "Error: ${e.message}", Toast.LENGTH_LONG).show()
                 }
             } finally {
                 withContext(Dispatchers.Main) {
@@ -142,6 +148,8 @@ class ContactSelectionActivity : AppCompatActivity() {
             }
         }
     }
+
+
 
     private suspend fun loadContactsFromPhone(): List<Contact> = withContext(Dispatchers.IO) {
         val tempContactList = mutableListOf<Contact>()
@@ -201,6 +209,8 @@ class ContactSelectionActivity : AppCompatActivity() {
             }
         }
     }
+
+
 
     private fun navigateToMainApp() {
         val intent = Intent(this, MainActivity::class.java)

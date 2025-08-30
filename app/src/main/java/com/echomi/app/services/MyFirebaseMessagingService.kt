@@ -6,18 +6,21 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.AudioManager
+import android.media.Ringtone
 import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import com.echomi.app.MainActivity
+import androidx.core.content.ContextCompat
 import com.echomi.app.R
-import android.app.ActivityManager
-import android.content.pm.PackageManager
-import android.net.Uri
+import com.echomi.app.SplashActivity
 import com.echomi.app.network.FcmTokenRequest
 import com.echomi.app.network.RetrofitInstance
 import com.google.firebase.auth.FirebaseAuth
@@ -26,9 +29,6 @@ import com.google.firebase.messaging.RemoteMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import android.os.Handler
-import android.os.Looper
-import androidx.core.content.ContextCompat
 import kotlinx.coroutines.tasks.await
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
@@ -37,6 +37,14 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         private const val TAG = "MyFirebaseService"
         private const val CHANNEL_ID = "emergency_channel"
         private const val NOTIFICATION_ID = 1001
+
+        private var emergencyRingtone: Ringtone? = null
+
+        fun stopEmergencyAlarm() {
+            emergencyRingtone?.stop()
+            emergencyRingtone = null
+            Log.d(TAG, "⏹️ Emergency alarm stopped by user")
+        }
     }
 
     override fun onCreate() {
@@ -50,52 +58,67 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         val type = remoteMessage.data["type"] ?: ""
         if (type == "emergency_alert") {
             Log.d(TAG, "🚨 Emergency notification received!")
+            increaseVolume()
             sendEmergencyNotification(remoteMessage)
             triggerEmergencyAlarm()
-            if (isAppInForeground()) {
-                showInAppEmergencyAlert(remoteMessage)
-            }
         } else {
             Log.w(TAG, "Invalid or missing 'type' in FCM payload: $type")
         }
     }
 
+    private fun increaseVolume() {
+        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+
+        if (audioManager.ringerMode != AudioManager.RINGER_MODE_NORMAL) {
+            audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
+            Log.d(TAG, "🔊 Ringer mode changed to NORMAL")
+        }
+
+        val maxRing = audioManager.getStreamMaxVolume(AudioManager.STREAM_RING)
+        val maxAlarm = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
+
+        audioManager.setStreamVolume(AudioManager.STREAM_RING, maxRing, 0)
+        audioManager.setStreamVolume(AudioManager.STREAM_ALARM, maxAlarm, 0)
+
+        Log.d(TAG, "🔊 Ring and Alarm volumes set to maximum")
+    }
+
     private fun sendEmergencyNotification(remoteMessage: RemoteMessage) {
         val title = remoteMessage.data["title"] ?: "🚨 Emergency Alert"
         val body = remoteMessage.data["body"] ?: "Urgent situation detected!"
+        val callerNumber = remoteMessage.data["callerNumber"] ?: "Unknown Caller"
 
-        val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        // Intent → open SplashActivity and stop alarm
+        val intent = Intent(this, SplashActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("STOP_ALARM", true)
         }
+
         val pendingIntent = PendingIntent.getActivity(
             this, 0, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val soundUri = Uri.parse("android.resource://${packageName}/raw/buzzer")
+
         val notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_emergency)
-            .setContentTitle(title)
-            .setContentText(body)
+            .setContentTitle("$title - Call Back Needed")
+            .setContentText("Caller: $callerNumber\n$body")
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setAutoCancel(true)
-            .setSound(Uri.parse("android.resource://${packageName}/raw/emergency_siren"))
+            .setSound(soundUri)  // Personal buzzer
             .setContentIntent(pendingIntent)
             .setFullScreenIntent(pendingIntent, true)
 
         try {
-            // ✅ Runtime check for Android 13+ (Tiramisu)
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-                ContextCompat.checkSelfPermission(
-                    this,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) == PackageManager.PERMISSION_GRANTED
+                ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
             ) {
                 with(NotificationManagerCompat.from(this)) {
                     notify(NOTIFICATION_ID, notificationBuilder.build())
                 }
-            } else {
-                Log.w(TAG, "⚠️ POST_NOTIFICATIONS permission not granted, skipping notification")
             }
         } catch (se: SecurityException) {
             Log.e(TAG, "❌ SecurityException while showing notification: ${se.message}")
@@ -112,51 +135,22 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             )
             wl.acquire(60 * 1000L) // 1 minute
 
-            val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
-            audioManager.setStreamVolume(AudioManager.STREAM_ALARM, maxVol, 0)
-
-            val alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+            val alarmUri = Uri.parse("android.resource://${packageName}/raw/buzzer")
             val ringtone = RingtoneManager.getRingtone(applicationContext, alarmUri)
             ringtone.play()
 
-            // Release wake lock and stop ringtone after 1 minute
             Handler(Looper.getMainLooper()).postDelayed({
                 if (wl.isHeld) {
                     wl.release()
-                    ringtone.stop()
-                    Log.d(TAG, "Wake lock released and alarm stopped")
+                    stopEmergencyAlarm()
+                    Log.d(TAG, "Wake lock released and alarm stopped automatically")
                 }
-            }, 60 * 1000L)
+            }, 2 * 60 * 1000L)
 
             Log.d(TAG, "Emergency alarm triggered")
         } catch (e: Exception) {
             Log.e(TAG, "Error triggering emergency alarm", e)
         }
-    }
-
-    private fun showInAppEmergencyAlert(remoteMessage: RemoteMessage) {
-        Log.d(TAG, "App is in foreground - should show in-app emergency dialog")
-        val intent = Intent("EMERGENCY_ALERT_RECEIVED").apply {
-            putExtra("callSid", remoteMessage.data["callSid"])
-            putExtra("callerNumber", remoteMessage.data["callerNumber"])
-            putExtra("message", remoteMessage.data["body"])
-        }
-        sendBroadcast(intent)
-    }
-
-    private fun isAppInForeground(): Boolean {
-        val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        val appProcesses = activityManager.runningAppProcesses ?: return false
-        val packageName = packageName
-
-        for (appProcess in appProcesses) {
-            if (appProcess.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND &&
-                appProcess.processName == packageName) {
-                return true
-            }
-        }
-        return false
     }
 
     private fun createNotificationChannel() {
@@ -167,45 +161,22 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
                 description = "Emergency call notifications"
-                enableLights(true)
-                lightColor = android.graphics.Color.RED
-                enableVibration(true)
-                vibrationPattern = longArrayOf(0, 1000, 500, 1000)
-                setSound(
-                    RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
-                    android.media.AudioAttributes.Builder()
-                        .setUsage(android.media.AudioAttributes.USAGE_ALARM)
-                        .build()
-                )
             }
-
             val notificationManager = getSystemService(NotificationManager::class.java)
             notificationManager.createNotificationChannel(channel)
-            Log.d(TAG, "Emergency notification channel created")
         }
     }
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        Log.d(TAG, "Refreshed token: $token")
-
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val idToken = getGoogleIdToken()
-                if (idToken.isEmpty()) {
-                    Log.e(TAG, "Cannot send FCM token: No Google ID token found")
-                    return@launch
-                }
-
+                if (idToken.isEmpty()) return@launch
                 val authHeader = "Bearer $idToken"
                 val request = FcmTokenRequest(fcmToken = token)
                 val response = RetrofitInstance.api.updateFcmToken(request, authHeader)
-
-                if (response.isSuccessful) {
-                    Log.d(TAG, "✅ Token sent successfully to backend")
-                } else {
-                    Log.e(TAG, "❌ Failed to send token: ${response.code()} - ${response.message()}")
-                }
+                Log.d(TAG, "FCM token sent: ${response.isSuccessful}")
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to send token", e)
             }
@@ -216,14 +187,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         return try {
             val auth = FirebaseAuth.getInstance()
             val user = auth.currentUser
-            if (user != null) {
-                val tokenResult = user.getIdToken(false).await()
-                tokenResult.token ?: ""
-            } else {
-                ""
-            }
+            user?.getIdToken(false)?.await()?.token ?: ""
         } catch (e: Exception) {
-            Log.e(TAG, "Error getting Google ID token", e)
             ""
         }
     }
