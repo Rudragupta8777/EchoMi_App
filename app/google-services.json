@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "456735676690",
+    "project_id": "echomi-24460",
+    "storage_bucket": "echomi-24460.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:456735676690:android:e59f6f047a4a49ca0a7bcb",
+        "android_client_info": {
+          "package_name": "com.echomi.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "456735676690-arba6ac8qitjnb5gimhjp1nkffl9njm2.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.echomi.app",
+            "certificate_hash": "5aa7b64c4eb04995c27333f5340c759ce0a568bc"
+          }
+        },
+        {
+          "client_id": "456735676690-5e8706f7s2k52clip9jl4btrt2hom55v.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBLS6u-WVTWvBQ3eHH3qd5yYOWLHHDeuJ4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "456735676690-5e8706f7s2k52clip9jl4btrt2hom55v.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
