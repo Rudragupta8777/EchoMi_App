@@ -17,6 +17,7 @@ import com.echomi.app.MainActivity
 import com.echomi.app.R
 import android.app.ActivityManager
 import android.content.pm.PackageManager
+import android.net.Uri
 import com.echomi.app.network.FcmTokenRequest
 import com.echomi.app.network.RetrofitInstance
 import com.google.firebase.auth.FirebaseAuth
@@ -33,7 +34,7 @@ import kotlinx.coroutines.tasks.await
 class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     companion object {
-        private const val TAG = "MyFirebaseMsgService"
+        private const val TAG = "MyFirebaseService"
         private const val CHANNEL_ID = "emergency_channel"
         private const val NOTIFICATION_ID = 1001
     }
@@ -44,13 +45,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
-        super.onMessageReceived(remoteMessage)
-        Log.d(TAG, "From: ${remoteMessage.from}")
-        Log.d(TAG, "Message data: ${remoteMessage.data}")
-        Log.d(TAG, "Notification: ${remoteMessage.notification}")
+        Log.d(TAG, "📩 FCM Data Payload: ${remoteMessage.data}")
 
-        // Validate data payload
-        if (remoteMessage.data.getOrElse("type") { "" } == "emergency") {
+        val type = remoteMessage.data["type"] ?: ""
+        if (type == "emergency_alert") {
             Log.d(TAG, "🚨 Emergency notification received!")
             sendEmergencyNotification(remoteMessage)
             triggerEmergencyAlarm()
@@ -58,55 +56,52 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 showInAppEmergencyAlert(remoteMessage)
             }
         } else {
-            Log.w(TAG, "Invalid or missing 'type' in FCM payload")
+            Log.w(TAG, "Invalid or missing 'type' in FCM payload: $type")
         }
     }
 
     private fun sendEmergencyNotification(remoteMessage: RemoteMessage) {
-        // Check notification permission (Android 13+)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) {
-            Log.w(TAG, "Notification permission not granted")
-            return
-        }
+        val title = remoteMessage.data["title"] ?: "🚨 Emergency Alert"
+        val body = remoteMessage.data["body"] ?: "Urgent situation detected!"
 
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            putExtra("emergency", true)
-            putExtra("callSid", remoteMessage.data["callSid"])
-            putExtra("callerNumber", remoteMessage.data["callerNumber"])
         }
-
         val pendingIntent = PendingIntent.getActivity(
-            this,
-            0,
-            intent,
+            this, 0, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val alarmSound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_emergency ?: android.R.drawable.ic_dialog_alert) // Fallback icon
-            .setContentTitle(remoteMessage.data.getOrElse("title") { "🚨 EMERGENCY ALERT" })
-            .setContentText(remoteMessage.data.getOrElse("body") { "Urgent call detected!" })
+        val notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_emergency)
+            .setContentTitle(title)
+            .setContentText(body)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setSound(alarmSound)
-            .setVibrate(longArrayOf(1000, 1000, 1000, 1000))
-            .setLights(0xFFFF0000.toInt(), 1000, 1000)
-            .setContentIntent(pendingIntent)
             .setAutoCancel(true)
-            .setOngoing(true)
-            .build()
+            .setSound(Uri.parse("android.resource://${packageName}/raw/emergency_siren"))
+            .setContentIntent(pendingIntent)
+            .setFullScreenIntent(pendingIntent, true)
 
-        with(NotificationManagerCompat.from(this)) {
-            notify(NOTIFICATION_ID, notification)
+        try {
+            // ✅ Runtime check for Android 13+ (Tiramisu)
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+            ) {
+                with(NotificationManagerCompat.from(this)) {
+                    notify(NOTIFICATION_ID, notificationBuilder.build())
+                }
+            } else {
+                Log.w(TAG, "⚠️ POST_NOTIFICATIONS permission not granted, skipping notification")
+            }
+        } catch (se: SecurityException) {
+            Log.e(TAG, "❌ SecurityException while showing notification: ${se.message}")
         }
-
-        Log.d(TAG, "Emergency notification displayed")
     }
+
 
     private fun triggerEmergencyAlarm() {
         try {
