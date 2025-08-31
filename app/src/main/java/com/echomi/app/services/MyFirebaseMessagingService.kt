@@ -21,6 +21,7 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.echomi.app.R
 import com.echomi.app.SplashActivity
+import com.echomi.app.data.OtpResponse
 import com.echomi.app.network.FcmTokenRequest
 import com.echomi.app.network.RetrofitInstance
 import com.google.firebase.auth.FirebaseAuth
@@ -28,15 +29,21 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import retrofit2.Response
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
 
     companion object {
         private const val TAG = "MyFirebaseService"
-        private const val CHANNEL_ID = "emergency_channel"
-        private const val NOTIFICATION_ID = 1001
+        private const val EMERGENCY_CHANNEL_ID = "emergency_channel"
+        private const val DELIVERY_CHANNEL_ID = "delivery_channel"
+        private const val EMERGENCY_NOTIFICATION_ID = 1001
+        private const val DELIVERY_NOTIFICATION_ID = 1002
 
         private var emergencyRingtone: Ringtone? = null
 
@@ -47,28 +54,70 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         }
     }
 
+    private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
     override fun onCreate() {
         super.onCreate()
-        createNotificationChannel()
+        createNotificationChannels()
     }
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         Log.d(TAG, "📩 FCM Data Payload: ${remoteMessage.data}")
 
         val type = remoteMessage.data["type"] ?: ""
-        if (type == "emergency_alert") {
-            Log.d(TAG, "🚨 Emergency notification received!")
-            increaseVolume()
-            sendEmergencyNotification(remoteMessage)
-            triggerEmergencyAlarm()
-        } else {
-            Log.w(TAG, "Invalid or missing 'type' in FCM payload: $type")
+        when (type) {
+            "emergency_alert" -> {
+                Log.d(TAG, "🚨 Emergency notification received!")
+                increaseVolume()
+                sendEmergencyNotification(remoteMessage)
+                triggerEmergencyAlarm()
+            }
+            "delivery_otp" -> {
+                Log.d(TAG, "📦 Delivery OTP notification received!")
+                handleDeliveryOtpNotification(remoteMessage)
+            }
+            else -> {
+                Log.w(TAG, "Invalid or missing 'type' in FCM payload: $type")
+            }
+        }
+    }
+
+    private fun createNotificationChannels() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val emergencyChannel = NotificationChannel(
+                EMERGENCY_CHANNEL_ID,
+                "Emergency Alerts",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Emergency call notifications"
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 1000, 500, 1000)
+                setSound(
+                    Uri.parse("android.resource://${packageName}/raw/buzzer"),
+                    android.media.AudioAttributes.Builder()
+                        .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                        .build()
+                )
+            }
+
+            val deliveryChannel = NotificationChannel(
+                DELIVERY_CHANNEL_ID,
+                "Delivery OTPs",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Notifications for delivery OTPs"
+                enableVibration(true)
+            }
+
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            notificationManager.createNotificationChannel(emergencyChannel)
+            notificationManager.createNotificationChannel(deliveryChannel)
+            Log.d(TAG, "Notification channels created")
         }
     }
 
     private fun increaseVolume() {
         val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-
         if (audioManager.ringerMode != AudioManager.RINGER_MODE_NORMAL) {
             audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
             Log.d(TAG, "🔊 Ringer mode changed to NORMAL")
@@ -76,10 +125,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         val maxRing = audioManager.getStreamMaxVolume(AudioManager.STREAM_RING)
         val maxAlarm = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
-
         audioManager.setStreamVolume(AudioManager.STREAM_RING, maxRing, 0)
         audioManager.setStreamVolume(AudioManager.STREAM_ALARM, maxAlarm, 0)
-
         Log.d(TAG, "🔊 Ring and Alarm volumes set to maximum")
     }
 
@@ -88,7 +135,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         val body = remoteMessage.data["body"] ?: "Urgent situation detected!"
         val callerNumber = remoteMessage.data["callerNumber"] ?: "Unknown Caller"
 
-        // Intent → open SplashActivity and stop alarm
         val intent = Intent(this, SplashActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra("STOP_ALARM", true)
@@ -101,14 +147,14 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
 
         val soundUri = Uri.parse("android.resource://${packageName}/raw/buzzer")
 
-        val notificationBuilder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_emergency)
+        val notificationBuilder = NotificationCompat.Builder(this, EMERGENCY_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_emergency ?: android.R.drawable.ic_dialog_alert)
             .setContentTitle("$title - Call Back Needed")
             .setContentText("Caller: $callerNumber\n$body")
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setAutoCancel(true)
-            .setSound(soundUri)  // Personal buzzer
+            .setSound(soundUri)
             .setContentIntent(pendingIntent)
             .setFullScreenIntent(pendingIntent, true)
 
@@ -117,27 +163,121 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
                 ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
             ) {
                 with(NotificationManagerCompat.from(this)) {
-                    notify(NOTIFICATION_ID, notificationBuilder.build())
+                    notify(EMERGENCY_NOTIFICATION_ID, notificationBuilder.build())
                 }
+                Log.d(TAG, "Emergency notification displayed")
+            } else {
+                Log.w(TAG, "Notification permission not granted")
             }
         } catch (se: SecurityException) {
             Log.e(TAG, "❌ SecurityException while showing notification: ${se.message}")
         }
     }
 
+    private fun handleDeliveryOtpNotification(remoteMessage: RemoteMessage) {
+        val sender = remoteMessage.data["sender"]
+        val orderId = remoteMessage.data["orderId"]
+
+        fetchLatestOtp(sender, orderId) { otpResponse ->
+            if (otpResponse != null && otpResponse.otp != null) {
+                sendDeliveryOtpNotification(otpResponse.otp, otpResponse.sender, otpResponse.orderId)
+            } else {
+                Log.w(TAG, "No OTP found for sender: $sender, orderId: $orderId")
+                sendDeliveryOtpNotification(null, sender, orderId)
+            }
+        }
+    }
+
+    private fun sendDeliveryOtpNotification(otp: String?, sender: String?, orderId: String?) {
+        val title = "📦 Delivery OTP"
+        val body = when {
+            otp != null -> "OTP for ${sender ?: "Delivery"}${orderId?.let { " (Order $it)" } ?: ""}: $otp"
+            else -> "No OTP found for ${sender ?: "Delivery"}${orderId?.let { " (Order $it)" } ?: ""}"
+        }
+
+        val intent = Intent(this, SplashActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("OTP_NOTIFICATION", true)
+            putExtra("otp", otp)
+            putExtra("sender", sender)
+            putExtra("orderId", orderId)
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            this, DELIVERY_NOTIFICATION_ID, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notificationBuilder = NotificationCompat.Builder(this, DELIVERY_CHANNEL_ID)
+            .setSmallIcon(R.drawable.delivery ?: android.R.drawable.ic_dialog_info)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setAutoCancel(true)
+            .setContentIntent(pendingIntent)
+
+        try {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+            ) {
+                with(NotificationManagerCompat.from(this)) {
+                    notify(DELIVERY_NOTIFICATION_ID, notificationBuilder.build())
+                }
+                Log.d(TAG, "Delivery OTP notification displayed: $body")
+            } else {
+                Log.w(TAG, "Notification permission not granted")
+            }
+        } catch (se: SecurityException) {
+            Log.e(TAG, "❌ SecurityException while showing OTP notification: ${se.message}")
+            // Optional: Log to analytics or notify backend
+        }
+    }
+
+    private fun fetchLatestOtp(sender: String? = null, orderId: String? = null, callback: (OtpResponse?) -> Unit) {
+        serviceScope.launch {
+            repeat(3) { attempt ->
+                try {
+                    val firebaseUid = FirebaseAuth.getInstance().currentUser?.uid ?: run {
+                        Log.e(TAG, "User not authenticated - cannot fetch OTP")
+                        callback(null)
+                        return@launch
+                    }
+                    val response: Response<OtpResponse> = RetrofitInstance.api.getLatestOtp(firebaseUid, sender, orderId)
+
+                    if (response.isSuccessful) {
+                        val otpData = response.body()
+                        Log.d(TAG, "Fetched OTP: ${otpData?.otp}")
+                        callback(otpData)
+                        return@launch
+                    } else {
+                        Log.e(TAG, "Failed to fetch OTP (attempt ${attempt + 1}): ${response.code()} - ${response.errorBody()?.string()}")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error fetching OTP (attempt ${attempt + 1})", e)
+                }
+                if (attempt < 2) delay(2000) // Wait 2s before retry
+            }
+            Log.e(TAG, "Failed to fetch OTP after 3 attempts")
+            callback(null)
+        }
+    }
 
     private fun triggerEmergencyAlarm() {
         try {
             val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
-            val wl = pm.newWakeLock(
-                PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
-                "echomi:EmergencyWakeLock"
-            )
+            val wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "echomi:EmergencyWakeLock")
             wl.acquire(60 * 1000L) // 1 minute
 
             val alarmUri = Uri.parse("android.resource://${packageName}/raw/buzzer")
-            val ringtone = RingtoneManager.getRingtone(applicationContext, alarmUri)
-            ringtone.play()
+            emergencyRingtone = RingtoneManager.getRingtone(applicationContext, alarmUri).apply {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    isLooping = true // Loop the ringtone
+                } else {
+                    // For older versions, we can use a Handler to replay (already partially handled by default)
+                }
+                play()
+            }
 
             Handler(Looper.getMainLooper()).postDelayed({
                 if (wl.isHeld) {
@@ -153,26 +293,15 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         }
     }
 
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "Emergency Alerts",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Emergency call notifications"
-            }
-            val notificationManager = getSystemService(NotificationManager::class.java)
-            notificationManager.createNotificationChannel(channel)
-        }
-    }
-
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        CoroutineScope(Dispatchers.IO).launch {
+        serviceScope.launch {
             try {
                 val idToken = getGoogleIdToken()
-                if (idToken.isEmpty()) return@launch
+                if (idToken.isEmpty()) {
+                    Log.e(TAG, "Cannot send FCM token: No Google ID token found")
+                    return@launch
+                }
                 val authHeader = "Bearer $idToken"
                 val request = FcmTokenRequest(fcmToken = token)
                 val response = RetrofitInstance.api.updateFcmToken(request, authHeader)
@@ -189,7 +318,14 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             val user = auth.currentUser
             user?.getIdToken(false)?.await()?.token ?: ""
         } catch (e: Exception) {
+            Log.e(TAG, "Error getting Google ID token", e)
             ""
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        serviceScope.cancel() // Clean up coroutines
+        Log.d(TAG, "Service destroyed, coroutines cancelled")
     }
 }

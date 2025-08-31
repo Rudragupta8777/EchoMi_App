@@ -19,6 +19,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.echomi.app.network.RetrofitInstance
+import com.echomi.app.services.MyFirebaseMessagingService
 import kotlinx.coroutines.launch
 import kotlin.jvm.java
 
@@ -78,6 +79,20 @@ class SplashActivity : AppCompatActivity() {
         requestNotificationPermission()
         requestDoNotDisturbPermission()
         setContentView(R.layout.activity_splash)
+
+
+        MyFirebaseMessagingService.stopEmergencyAlarm()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val permissions = arrayOf(
+                Manifest.permission.RECEIVE_SMS,
+                Manifest.permission.READ_SMS,
+                Manifest.permission.POST_NOTIFICATIONS
+            )
+            if (permissions.any { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }) {
+                ActivityCompat.requestPermissions(this, permissions, 101)
+            }
+        }
 
         progressBar = findViewById(R.id.progressBar)
         statusTextView = findViewById(R.id.statusTextView)

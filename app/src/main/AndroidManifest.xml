@@ -14,6 +14,12 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
 
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.READ_SMS" />
+    <uses-permission android:name="android.permission.RECEIVE_MMS"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+
 
     <application
         android:allowBackup="true"
@@ -27,6 +33,12 @@
         tools:ignore="HiddenApiUsage"
         tools:targetApi="31">
 
+        <receiver android:name=".services.SmsReceiver" android:exported="true">
+            <intent-filter android:priority="999">
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+
         <service
             android:name=".services.MyFirebaseMessagingService"
             android:exported="false">
@@ -35,7 +47,6 @@
             </intent-filter>
         </service>
 
-        <!-- Add this meta-data for Firebase -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="emergency_channel" />
@@ -64,5 +75,4 @@
             android:name=".MainActivity"
             android:exported="false" />
     </application>
-
 </manifest>

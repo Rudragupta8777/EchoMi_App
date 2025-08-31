@@ -6,6 +6,8 @@ import com.echomi.app.data.Contact
 import com.echomi.app.data.ContactRequest
 import com.echomi.app.data.FirebaseLoginRequest
 import com.echomi.app.data.MessageResponse
+import com.echomi.app.data.OtpRequest
+import com.echomi.app.data.OtpResponse
 import com.echomi.app.data.Prompt
 import com.echomi.app.data.UpdatePromptRequest
 import com.echomi.app.data.UserResponse
@@ -16,6 +18,7 @@ import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface ApiService {
     // Health check endpoint
@@ -61,4 +64,15 @@ interface ApiService {
         @Body request: FcmTokenRequest,
         @Header("Authorization") authToken: String
     ): Response<MessageResponse>
+
+    // In ApiService interface (com.echomi.app.network.ApiService.kt) - add these methods
+    @POST("delivery/otp")
+    suspend fun sendOtp(@Body request: OtpRequest): Response<OtpResponse>
+
+    @GET("delivery/otp/{firebaseUid}")
+    suspend fun getLatestOtp(
+        @Path("firebaseUid") firebaseUid: String,
+        @Query("sender") sender: String? = null,
+        @Query("orderId") orderId: String? = null
+    ): Response<OtpResponse>
 }
