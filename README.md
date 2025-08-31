@@ -19,8 +19,8 @@
 ---
 
 ## 🌟 Live Demo & URLs
-- **AI Model (Python AI Service):** [https://your-ai-service-url.com](https://your-ai-service-url.com)  
-- **Backend Node.js API:** [https://your-backend-url.com](https://your-backend-url.com)  
+- **AI Model (Python AI Service):** [https://your-ai-service-url.com](https://github.com/ruchit2005/EchoMi-AI-Model.git)  
+- **Backend Node.js API:** [https://your-backend-url.com](https://github.com/Rudragupta8777/EchoMi_Backend.git)  
 
 ---
 
