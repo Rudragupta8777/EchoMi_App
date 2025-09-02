@@ -18,12 +18,6 @@
 
 ---
 
-## 🌟 Live Demo & URLs
-- **AI Model (Python AI Service):** [https://your-ai-service-url.com](https://github.com/ruchit2005/EchoMi-AI-Model.git)  
-- **Backend Node.js API:** [https://your-backend-url.com](https://github.com/Rudragupta8777/EchoMi_Backend.git)  
-
----
-
 ## 🌟 Overview
 EchoMI is an AI-powered personal assistant that automatically answers calls when you can't. It understands the context of calls, assists delivery drivers, and sends immediate alerts for emergencies. The companion Android app allows you to review call transcripts and customize AI prompts.  
 
@@ -65,17 +59,22 @@ EchoMI is an AI-powered personal assistant that automatically answers calls when
 ---
 
 ## 🛠️ Tech Stack
-<div style="background-color: white; padding: 10px; display: inline-flex; align-items: center; gap: 10px;">
-  <img src="https://cdn.simpleicons.org/kotlin/7F52FF" height="75" alt="Kotlin" />
-  <img src="https://cdn.simpleicons.org/nodedotjs/339933" height="75" alt="Node.js" />
-  <img src="https://cdn.simpleicons.org/express/000000" height="75" alt="Express" />
-  <img src="https://cdn.simpleicons.org/python/3776AB" height="75" alt="Python" />
-  <img src="https://cdn.simpleicons.org/flask/000000" height="75" alt="Flask" />
-  <img src="https://cdn.simpleicons.org/twilio/F22F46" height="75" alt="Twilio" />
-  <img src="https://cdn.simpleicons.org/deepgram/13EF93" height="75" alt="Deepgram" />
-  <img src="https://cdn.simpleicons.org/openai/412991" height="75" alt="OpenAI" />
-  <img src="https://cdn.simpleicons.org/googlemaps/4285F4" height="75" alt="Google Maps" />
-  <img src="https://cdn.simpleicons.org/mongodb/47A248" height="75" alt="MongoDB" />
+
+<div align="center">
+  <table>
+    <tr>
+      <td align="center"><img src="https://cdn.simpleicons.org/kotlin" width="50px"/><br/>Kotlin</td>
+      <td align="center"><img src="https://cdn.simpleicons.org/nodedotjs" width="50px"/><br/>Node.js</td>
+      <td align="center"><img src="https://cdn.simpleicons.org/mongodb" width="50px"/><br/>MongoDB</td>
+      <td align="center"><img src="https://cdn.simpleicons.org/firebase" width="50px"/><br/>Firebase</td>
+      <td align="center"><img src="https://cdn.simpleicons.org/python" width="50px"/><br/>Python</td>
+      <td align="center"><img src="https://cdn.simpleicons.org/flask" width="50px"/><br/>Flask</td>
+      <td align="center"><img src="https://cdn.simpleicons.org/twilio" width="50px"/><br/>Twilio</td>
+      <td align="center"><img src="https://cdn.simpleicons.org/deepgram" width="50px"/><br/>Deepgram</td>
+      <td align="center"><img src="https://cdn.simpleicons.org/openai" width="50px"/><br/>OpenAI</td>
+      <td align="center"><img src="https://cdn.simpleicons.org/googlemaps" width="50px"/><br/>Google Maps</td>
+    </tr>
+  </table>
 </div>
 
 ---
@@ -108,17 +107,17 @@ EchoMI is an AI-powered personal assistant that automatically answers calls when
 
 ## ⚙️ Implementation Status
 
-| Component | Status | Notes |
-|-----------|--------|-------|
-| User Authentication | ✅ Complete | Firebase Auth login |
-| Live Call Handling | ✅ Complete | Twilio -> Node.js -> AI -> Deepgram |
-| Delivery Directions | ✅ Complete | Google Maps/Mapbox directions integrated |
-| Emergency Detection | ✅ Complete | Keyword detection & FCM push |
-| Custom Prompt Management | ✅ Complete | Users can set prompts via app |
-| Call Transcript Storage | ✅ Complete | Saving full transcripts to MongoDB |
-| AI Call Summarization | ⏳ In Progress | Fine-tuning for accurate summaries |
-| Voicemail Feature | ⏳ In Progress | Recording & storing voicemails |
-| Secure OTP Handling | 🟡 Planned | Researching secure delivery OTP methods |
+|         Component         |      Status      |                Notes                      |
+|---------------------------|------------------|------------------------------------------|
+| User Authentication       | ✅ Complete     | Firebase Auth login                       |
+| Live Call Handling        | ✅ Complete     | Twilio -> Node.js -> AI -> Deepgram       |
+| Delivery Directions       | ✅ Complete     | Google Maps/Mapbox directions integrated  |
+| Emergency Detection       | ✅ Complete     | Keyword detection & FCM push              |
+| Custom Prompt Management  | ✅ Complete     | Users can set prompts via app             |
+| Call Transcript Storage   | ✅ Complete     | Saving full transcripts to MongoDB        |
+| AI Call Summarization     | ⏳ In Progress  | Fine-tuning for accurate summaries        |
+| Voicemail Feature         | ⏳ In Progress  | Recording & storing voicemails            |
+| Secure OTP Handling       | 🟡 Planned      | Researching secure delivery OTP methods   |
 
 ---
 
@@ -158,12 +157,33 @@ ngrok http 5000
 
 ---
 
+## 🔗 Related Repositories
+
+- [EchoMi AI Model](https://github.com/ruchit2005/EchoMi-AI-Model.git)
+- [EchoMi Backend](https://github.com/Rudragupta8777/EchoMi_Backend.git)
+
+---
+
 ## 👥 Meet Our Team
 
-| Name         | Role                    | Links                                                                                                      |
-| ------------ | ----------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Rudra Gupta  | App & Backend Developer | [GitHub](https://github.com/Rudragupta8777) \| [LinkedIn](https://www.linkedin.com/in/rudra-gupta-36827828b/)         |
-| Ruchit Gupta | AI & Python Developer   | [GitHub](https://github.com/ruchit2005) \| [LinkedIn](https://www.linkedin.com/in/ruchit-gupta-608a6428b/) |
+<div align="center">
+  <table>
+    <tr>
+      <td align="center">
+        <h3>Rudra Gupta</h3>
+        <p><i>App & Backend Developer</i></p>
+        <a href="https://github.com/Rudragupta8777"><img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white" height="22" target="_blank"></a>
+        <a href="https://www.linkedin.com/in/rudra-gupta-36827828b/"><img src="https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white" height="22" target="_blank"></a>
+      </td>
+      <td align="center">
+        <h3>Ruchit Gupta</h3>
+<p><i>AI & Python Developer</i></p>
+<a href="https://github.com/ruchit2005"><img src="https://img.shields.io/badge/GitHub-181717?style=flat-square&logo=github&logoColor=white" height="22" target="_blank"></a>
+<a href="https://www.linkedin.com/in/ruchit-gupta-608a6428b/"><img src="https://img.shields.io/badge/LinkedIn-0A66C2?style=flat-square&logo=linkedin&logoColor=white" height="22" target="_blank"></a>
+      </td>
+    </tr>
+  </table>
+</div>
 
 ---
 
