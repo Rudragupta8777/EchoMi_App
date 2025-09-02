@@ -65,43 +65,39 @@ EchoMI is an AI-powered personal assistant that automatically answers calls when
 ---
 
 ## 🛠️ Tech Stack
-
-| Technology | Usage |
-|------------|-------|
-| ![Kotlin](https://cdn.simpleicons.org/kotlin/7F52FF) Kotlin | Android App |
-| ![Node.js](https://cdn.simpleicons.org/nodedotjs/339933) Node.js | Backend Server |
-| ![Express](https://cdn.simpleicons.org/express/000000) Express | API Framework |
-| ![Python](https://cdn.simpleicons.org/python/3776AB) Python | AI Service |
-| ![Flask](https://cdn.simpleicons.org/flask/000000) Flask | AI API |
-| ![Twilio](https://cdn.simpleicons.org/twilio/F22F46) Twilio | Telephony |
-| ![Deepgram](https://cdn.simpleicons.org/deepgram/13EF93) Deepgram | STT / TTS |
-| ![OpenAI](https://cdn.simpleicons.org/openai/412991) OpenAI | AI Model |
-| ![Google Maps](https://cdn.simpleicons.org/googlemaps/4285F4) Google Maps | Geocoding |
-| ![MongoDB](https://cdn.simpleicons.org/mongodb/47A248) MongoDB | Database |
+<div style="background-color: white; padding: 10px; display: inline-flex; align-items: center; gap: 10px;">
+  <img src="https://cdn.simpleicons.org/kotlin/7F52FF" height="80" alt="Kotlin" />
+  <img src="https://cdn.simpleicons.org/nodedotjs/339933" height="80" alt="Node.js" />
+  <img src="https://cdn.simpleicons.org/express/000000" height="80" alt="Express" />
+  <img src="https://cdn.simpleicons.org/python/3776AB" height="80" alt="Python" />
+  <img src="https://cdn.simpleicons.org/flask/000000" height="80" alt="Flask" />
+  <img src="https://cdn.simpleicons.org/twilio/F22F46" height="80" alt="Twilio" />
+  <img src="https://cdn.simpleicons.org/deepgram/13EF93" height="80" alt="Deepgram" />
+  <img src="https://cdn.simpleicons.org/openai/412991" height="80" alt="OpenAI" />
+  <img src="https://cdn.simpleicons.org/googlemaps/4285F4" height="80" alt="Google Maps" />
+  <img src="https://cdn.simpleicons.org/mongodb/47A248" height="80" alt="MongoDB" />
+</div>
 
 ---
 
 ## 📱 System Architecture
 
 ```
-
-```
-    [Caller]
-       │
-       ▼
-```
-
+          [Caller]
+             │
+             ▼
 ┌──────────────────────────┐      ┌──────────────────────────┐
 │      Twilio Voice        │      │      Android App         │
 └────────────┬─────────────┘      └────────────┬─────────────┘
-│ (Call & Audio)                  │ (REST API)
-▼                                 ▼
+       (Call & Audio)                     (REST API)
+             │                                 │ 
+             ▼                                 ▼
 ┌──────────────────────────┐      ┌──────────────────────────┐
 │    Node.js Backend       │◄────►│   Python AI Service      │
 │  (Express, WebSockets)   │      │ (Flask, OpenAI, Maps)    │
 └────────────┬─────────────┘      └──────────────────────────┘
-│                                 ▲
-▼                                 │ (FCM Push)
+             │                                 ▲
+             ▼                                 │ (FCM Push)
 ┌──────────────────────────┐                   │
 │    MongoDB Database      │───────────────────┘
 └──────────────────────────┘
