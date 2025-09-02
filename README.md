@@ -66,16 +66,16 @@ EchoMI is an AI-powered personal assistant that automatically answers calls when
 
 ## 🛠️ Tech Stack
 <div style="background-color: white; padding: 10px; display: inline-flex; align-items: center; gap: 10px;">
-  <img src="https://cdn.simpleicons.org/kotlin/7F52FF" height="80" alt="Kotlin" />
-  <img src="https://cdn.simpleicons.org/nodedotjs/339933" height="80" alt="Node.js" />
-  <img src="https://cdn.simpleicons.org/express/000000" height="80" alt="Express" />
-  <img src="https://cdn.simpleicons.org/python/3776AB" height="80" alt="Python" />
-  <img src="https://cdn.simpleicons.org/flask/000000" height="80" alt="Flask" />
-  <img src="https://cdn.simpleicons.org/twilio/F22F46" height="80" alt="Twilio" />
-  <img src="https://cdn.simpleicons.org/deepgram/13EF93" height="80" alt="Deepgram" />
-  <img src="https://cdn.simpleicons.org/openai/412991" height="80" alt="OpenAI" />
-  <img src="https://cdn.simpleicons.org/googlemaps/4285F4" height="80" alt="Google Maps" />
-  <img src="https://cdn.simpleicons.org/mongodb/47A248" height="80" alt="MongoDB" />
+  <img src="https://cdn.simpleicons.org/kotlin/7F52FF" height="75" alt="Kotlin" />
+  <img src="https://cdn.simpleicons.org/nodedotjs/339933" height="75" alt="Node.js" />
+  <img src="https://cdn.simpleicons.org/express/000000" height="75" alt="Express" />
+  <img src="https://cdn.simpleicons.org/python/3776AB" height="75" alt="Python" />
+  <img src="https://cdn.simpleicons.org/flask/000000" height="75" alt="Flask" />
+  <img src="https://cdn.simpleicons.org/twilio/F22F46" height="75" alt="Twilio" />
+  <img src="https://cdn.simpleicons.org/deepgram/13EF93" height="75" alt="Deepgram" />
+  <img src="https://cdn.simpleicons.org/openai/412991" height="75" alt="OpenAI" />
+  <img src="https://cdn.simpleicons.org/googlemaps/4285F4" height="75" alt="Google Maps" />
+  <img src="https://cdn.simpleicons.org/mongodb/47A248" height="75" alt="MongoDB" />
 </div>
 
 ---
@@ -170,4 +170,3 @@ ngrok http 5000
 <div align="center">
 <h3><i>Your personal AI receptionist | Built to make life easier</i></h3>
 </div>
-```
