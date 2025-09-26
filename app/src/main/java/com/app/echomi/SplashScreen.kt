@@ -54,6 +54,19 @@ class SplashScreen : AppCompatActivity() {
         }
     }
 
+    private fun requestSmsPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val permissions = arrayOf(
+                Manifest.permission.RECEIVE_SMS,
+                Manifest.permission.READ_SMS,
+                Manifest.permission.POST_NOTIFICATIONS
+            )
+            if (permissions.any { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }) {
+                ActivityCompat.requestPermissions(this, permissions, 101)
+            }
+        }
+    }
+
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
@@ -76,6 +89,7 @@ class SplashScreen : AppCompatActivity() {
         enableEdgeToEdge()
         requestNotificationPermission()
         requestDoNotDisturbPermission()
+        requestSmsPermissions() // Add this line
         setContentView(R.layout.activity_splash_screen)
 
 
