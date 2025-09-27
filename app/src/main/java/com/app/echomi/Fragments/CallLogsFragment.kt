@@ -1,6 +1,7 @@
 package com.app.echomi.Fragments
 
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
@@ -10,6 +11,8 @@ import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -28,6 +31,10 @@ class CallLogsFragment : Fragment() {
     private lateinit var emptyStateTextView: TextView
     private lateinit var searchEditText: EditText
 
+    companion object {
+        private const val CONTACTS_PERMISSION_REQUEST_CODE = 100
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -41,34 +48,20 @@ class CallLogsFragment : Fragment() {
 
         setupRecyclerView()
         setupSearch()
-        fetchCallLogs()
 
-        // Configure Lottie animation with error handling
-        try {
-            loadingAnimationView.speed = 1.0f
-            loadingAnimationView.playAnimation() // Ensure animation plays (redundant with autoPlay=true)
-        } catch (e: Exception) {
-            Toast.makeText(context, "Failed to load animation: ${e.message}", Toast.LENGTH_LONG).show()
-            loadingAnimationView.visibility = View.GONE // Hide animation view on failure
-        }
-
-        // Add failure listener for Lottie animation
-        loadingAnimationView.addLottieOnCompositionLoadedListener { composition ->
-            if (composition == null) {
-                Toast.makeText(context, "Failed to load Lottie animation", Toast.LENGTH_LONG).show()
-                loadingAnimationView.visibility = View.GONE // Hide animation view on failure
-            }
-        }
+        // Check and request contacts permission
+        checkContactsPermission()
 
         return view
     }
 
     private fun setupRecyclerView() {
-        adapter = CallLogsAdapter(mutableListOf()) { clickedLog ->
+        adapter = CallLogsAdapter(mutableListOf(), { clickedLog ->
             val intent = Intent(activity, CallDetailScreen::class.java)
             intent.putExtra("CALL_ID", clickedLog._id)
             startActivity(intent)
-        }
+        }, requireContext()) // Pass context to adapter
+
         recyclerView.adapter = adapter
         recyclerView.layoutManager = LinearLayoutManager(context)
     }
@@ -85,8 +78,69 @@ class CallLogsFragment : Fragment() {
         })
     }
 
+    private fun checkContactsPermission() {
+        when {
+            ContextCompat.checkSelfPermission(
+                requireContext(),
+                android.Manifest.permission.READ_CONTACTS
+            ) == PackageManager.PERMISSION_GRANTED -> {
+                // Permission already granted, fetch call logs
+                fetchCallLogs()
+            }
+            ActivityCompat.shouldShowRequestPermissionRationale(
+                requireActivity(),
+                android.Manifest.permission.READ_CONTACTS
+            ) -> {
+                // Explain why permission is needed
+                Toast.makeText(
+                    context,
+                    "Contact permission is needed to display contact names",
+                    Toast.LENGTH_LONG
+                ).show()
+                requestContactsPermission()
+            }
+            else -> {
+                // Request the permission
+                requestContactsPermission()
+            }
+        }
+    }
+
+    private fun requestContactsPermission() {
+        requestPermissions(
+            arrayOf(android.Manifest.permission.READ_CONTACTS),
+            CONTACTS_PERMISSION_REQUEST_CODE
+        )
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        when (requestCode) {
+            CONTACTS_PERMISSION_REQUEST_CODE -> {
+                if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
+                    // Permission granted, fetch call logs
+                    fetchCallLogs()
+                } else {
+                    // Permission denied, fetch logs anyway (will show numbers instead of names)
+                    Toast.makeText(
+                        context,
+                        "Contact names won't be displayed due to missing permission",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    fetchCallLogs()
+                }
+            }
+            else -> {
+                super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+            }
+        }
+    }
+
     private fun fetchCallLogs() {
-        loadingAnimationView.visibility = View.VISIBLE // Show animation during loading
+        loadingAnimationView.visibility = View.VISIBLE
         emptyStateTextView.visibility = View.GONE
         recyclerView.visibility = View.GONE
 
@@ -109,14 +163,14 @@ class CallLogsFragment : Fragment() {
                 Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                 emptyStateTextView.visibility = View.VISIBLE
             } finally {
-                loadingAnimationView.visibility = View.GONE // Hide animation after loading
+                loadingAnimationView.visibility = View.GONE
             }
         }
     }
 
+    // Rest of your existing methods (onPause, onResume, onDestroyView) remain the same
     override fun onPause() {
         super.onPause()
-        // Pause animation when fragment is paused
         if (::loadingAnimationView.isInitialized) {
             loadingAnimationView.pauseAnimation()
         }
@@ -124,7 +178,6 @@ class CallLogsFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        // Resume animation when fragment is resumed
         if (::loadingAnimationView.isInitialized) {
             try {
                 loadingAnimationView.playAnimation()
@@ -137,7 +190,6 @@ class CallLogsFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        // Cancel animation when view is destroyed
         if (::loadingAnimationView.isInitialized) {
             loadingAnimationView.cancelAnimation()
         }

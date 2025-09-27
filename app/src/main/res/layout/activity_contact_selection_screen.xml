@@ -79,7 +79,6 @@
 
     </com.google.android.material.card.MaterialCardView>
 
-
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/contactsRecyclerView"
         android:layout_width="0dp"
@@ -120,14 +119,17 @@
             android:backgroundTint="@color/white"
             android:text="Save &amp; Finish"
             android:padding="12dp"/>
+
     </LinearLayout>
 
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/loadingAnimationView"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:visibility="gone"
-        android:indeterminateTint="#0D7615"
+        app:lottie_rawRes="@raw/cool"
+        app:lottie_autoPlay="true"
+        app:lottie_loop="true"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"

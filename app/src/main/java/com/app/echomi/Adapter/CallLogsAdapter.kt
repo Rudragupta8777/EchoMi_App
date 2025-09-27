@@ -1,5 +1,6 @@
 package com.app.echomi.Adapter
 
+import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,6 +11,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.app.echomi.data.CallLog
 import com.app.echomi.R
+import com.app.echomi.Services.ContactHelper
 import java.util.*
 import kotlin.text.contains
 import kotlin.text.isNullOrEmpty
@@ -19,7 +21,8 @@ import kotlin.text.trim
 
 class CallLogsAdapter(
     private var logs: MutableList<CallLog>,
-    private val onItemClick: (CallLog) -> Unit
+    private val onItemClick: (CallLog) -> Unit,
+    private val context: Context // Add context parameter
 ) : RecyclerView.Adapter<CallLogsAdapter.LogViewHolder>(), Filterable {
 
     private var fullLogsList: List<CallLog> = ArrayList(logs)
@@ -39,7 +42,11 @@ class CallLogsAdapter(
 
     override fun onBindViewHolder(holder: LogViewHolder, position: Int) {
         val log = logs[position]
-        holder.callerNumber.text = log.callerNumber
+
+        // Get contact name if available, otherwise use number
+        val displayName = getContactDisplayName(log.callerNumber)
+        holder.callerNumber.text = displayName
+
         holder.summary.text = log.summary ?: "No summary available."
         holder.date.text = log.startTime.substring(0, 10)
 
@@ -70,7 +77,12 @@ class CallLogsAdapter(
             } else {
                 val filterPattern = constraint.toString().lowercase(Locale.getDefault()).trim()
                 for (item in fullLogsList) {
-                    if (item.callerNumber.contains(filterPattern) ||
+                    // Search in both displayed name and original number
+                    val displayName = getContactDisplayName(item.callerNumber).lowercase(Locale.getDefault())
+                    val originalNumber = item.callerNumber.lowercase(Locale.getDefault())
+
+                    if (displayName.contains(filterPattern) ||
+                        originalNumber.contains(filterPattern) ||
                         item.summary?.lowercase(Locale.getDefault())?.contains(filterPattern) == true) {
                         filteredList.add(item)
                     }
@@ -88,5 +100,9 @@ class CallLogsAdapter(
             }
             notifyDataSetChanged()
         }
+    }
+
+    private fun getContactDisplayName(phoneNumber: String): String {
+        return ContactHelper.getContactName(context, phoneNumber) ?: phoneNumber
     }
 }

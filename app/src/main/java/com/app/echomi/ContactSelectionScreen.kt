@@ -10,7 +10,9 @@ import android.text.TextWatcher
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
-import android.widget.ProgressBar
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,11 +21,13 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.airbnb.lottie.LottieAnimationView
 import com.app.echomi.Adapter.ContactsAdapter
 import com.app.echomi.Network.RetrofitInstance
 import com.app.echomi.data.CategorizedContact
 import com.app.echomi.data.Contact
 import com.app.echomi.data.ContactRequest
+import com.google.android.material.card.MaterialCardView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -31,8 +35,13 @@ import kotlinx.coroutines.withContext
 class ContactSelectionScreen : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var contactsAdapter: ContactsAdapter
-    private lateinit var progressBar: ProgressBar
+    private lateinit var loadingAnimationView: LottieAnimationView
     private lateinit var searchEditText: EditText
+    private lateinit var backgroundImageView: ImageView
+    private lateinit var titleTextView: TextView
+    private lateinit var subtitleTextView: TextView
+    private lateinit var searchCard: MaterialCardView
+    private lateinit var buttonContainer: LinearLayout
     private val fullContactsList = mutableListOf<Contact>()
     private val displayedContactsList = mutableListOf<Contact>()
 
@@ -50,11 +59,38 @@ class ContactSelectionScreen : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_contact_selection_screen)
 
+        // Initialize views
+        backgroundImageView = findViewById(R.id.backgroundImageView)
+        titleTextView = findViewById(R.id.titleTextView)
+        subtitleTextView = findViewById(R.id.subtitleTextView)
+        searchCard = findViewById(R.id.search_card)
         recyclerView = findViewById(R.id.contactsRecyclerView)
-        progressBar = findViewById(R.id.progressBar)
+        buttonContainer = findViewById(R.id.buttonContainer)
+        loadingAnimationView = findViewById(R.id.loadingAnimationView)
         searchEditText = findViewById(R.id.searchEditText)
         val saveButton: Button = findViewById(R.id.saveButton)
         val skipButton: Button = findViewById(R.id.skipButton)
+
+        // Configure Lottie animation with error handling
+        try {
+            loadingAnimationView.speed = 1.0f
+            loadingAnimationView.playAnimation() // Ensure animation plays (redundant with autoPlay=true)
+        } catch (e: Exception) {
+            Toast.makeText(this, "Failed to load animation: ${e.message}", Toast.LENGTH_LONG).show()
+            loadingAnimationView.visibility = View.GONE // Hide animation on failure
+            // Restore UI elements as fallback
+            showLoading(false)
+        }
+
+        // Add failure listener for Lottie animation
+        loadingAnimationView.addLottieOnCompositionLoadedListener { composition ->
+            if (composition == null) {
+                Toast.makeText(this, "Failed to load Lottie animation", Toast.LENGTH_LONG).show()
+                loadingAnimationView.visibility = View.GONE // Hide animation on failure
+                // Restore UI elements as fallback
+                showLoading(false)
+            }
+        }
 
         setupRecyclerView()
         setupSearch()
@@ -101,7 +137,7 @@ class ContactSelectionScreen : AppCompatActivity() {
     }
 
     private fun loadAndMergeContacts() {
-        progressBar.visibility = View.VISIBLE
+        showLoading(true)
         lifecycleScope.launch {
             try {
                 // Step 1: Fetch saved contacts from backend
@@ -143,15 +179,13 @@ class ContactSelectionScreen : AppCompatActivity() {
                     fullContactsList.clear()
                     fullContactsList.addAll(mergedContacts)
                     sortAndFilterList()
+                    showLoading(false)
                 }
 
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     Toast.makeText(this@ContactSelectionScreen, "Error: ${e.message}", Toast.LENGTH_LONG).show()
-                }
-            } finally {
-                withContext(Dispatchers.Main) {
-                    progressBar.visibility = View.GONE
+                    showLoading(false)
                 }
             }
         }
@@ -188,7 +222,6 @@ class ContactSelectionScreen : AppCompatActivity() {
         return mergedContacts
     }
 
-    // Enhanced normalization function
     private fun normalizePhoneNumber(phoneNumber: String): String {
         var normalized = phoneNumber.replace("[^0-9+]".toRegex(), "")
 
@@ -251,8 +284,7 @@ class ContactSelectionScreen : AppCompatActivity() {
 
     private fun saveCategorizedContacts() {
         val categorizedContacts = contactsAdapter.getCategorizedContacts()
-
-        progressBar.visibility = View.VISIBLE
+        showLoading(true)
         lifecycleScope.launch {
             try {
                 val requestBody = ContactRequest(
@@ -272,7 +304,7 @@ class ContactSelectionScreen : AppCompatActivity() {
             } catch (e: Exception) {
                 Toast.makeText(this@ContactSelectionScreen, "Error: ${e.message}", Toast.LENGTH_LONG).show()
             } finally {
-                progressBar.visibility = View.GONE
+                showLoading(false)
             }
         }
     }
@@ -282,5 +314,46 @@ class ContactSelectionScreen : AppCompatActivity() {
         intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
         startActivity(intent)
         finish()
+    }
+
+    private fun showLoading(isLoading: Boolean) {
+        loadingAnimationView.visibility = if (isLoading) View.VISIBLE else View.GONE
+        backgroundImageView.visibility = if (isLoading) View.GONE else View.VISIBLE
+        titleTextView.visibility = if (isLoading) View.GONE else View.VISIBLE
+        subtitleTextView.visibility = if (isLoading) View.GONE else View.VISIBLE
+        searchCard.visibility = if (isLoading) View.GONE else View.VISIBLE
+        recyclerView.visibility = if (isLoading) View.GONE else View.VISIBLE
+        buttonContainer.visibility = if (isLoading) View.GONE else View.VISIBLE
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Pause animation when activity is paused
+        if (::loadingAnimationView.isInitialized) {
+            loadingAnimationView.pauseAnimation()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Resume animation when activity is resumed
+        if (::loadingAnimationView.isInitialized) {
+            try {
+                loadingAnimationView.playAnimation()
+            } catch (e: Exception) {
+                Toast.makeText(this, "Failed to resume animation: ${e.message}", Toast.LENGTH_LONG).show()
+                loadingAnimationView.visibility = View.GONE
+                // Restore UI elements as fallback
+                showLoading(false)
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Cancel animation when activity is destroyed
+        if (::loadingAnimationView.isInitialized) {
+            loadingAnimationView.cancelAnimation()
+        }
     }
 }
