@@ -8,25 +8,23 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
-import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.airbnb.lottie.LottieAnimationView
 import com.app.echomi.Adapter.CallLogsAdapter
 import com.app.echomi.CallDetailScreen
 import com.app.echomi.Network.RetrofitInstance
 import com.app.echomi.R
 import kotlinx.coroutines.launch
-import kotlin.collections.isNullOrEmpty
-import kotlin.jvm.java
 
 class CallLogsFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: CallLogsAdapter
-    private lateinit var progressBar: ProgressBar
+    private lateinit var loadingAnimationView: LottieAnimationView
     private lateinit var emptyStateTextView: TextView
     private lateinit var searchEditText: EditText
 
@@ -37,13 +35,30 @@ class CallLogsFragment : Fragment() {
         val view = inflater.inflate(R.layout.fragment_call_logs, container, false)
 
         recyclerView = view.findViewById(R.id.callLogsRecyclerView)
-        progressBar = view.findViewById(R.id.progressBar)
+        loadingAnimationView = view.findViewById(R.id.loadingAnimationView)
         emptyStateTextView = view.findViewById(R.id.emptyStateTextView)
         searchEditText = view.findViewById(R.id.searchEditText)
 
         setupRecyclerView()
         setupSearch()
         fetchCallLogs()
+
+        // Configure Lottie animation with error handling
+        try {
+            loadingAnimationView.speed = 1.0f
+            loadingAnimationView.playAnimation() // Ensure animation plays (redundant with autoPlay=true)
+        } catch (e: Exception) {
+            Toast.makeText(context, "Failed to load animation: ${e.message}", Toast.LENGTH_LONG).show()
+            loadingAnimationView.visibility = View.GONE // Hide animation view on failure
+        }
+
+        // Add failure listener for Lottie animation
+        loadingAnimationView.addLottieOnCompositionLoadedListener { composition ->
+            if (composition == null) {
+                Toast.makeText(context, "Failed to load Lottie animation", Toast.LENGTH_LONG).show()
+                loadingAnimationView.visibility = View.GONE // Hide animation view on failure
+            }
+        }
 
         return view
     }
@@ -71,7 +86,7 @@ class CallLogsFragment : Fragment() {
     }
 
     private fun fetchCallLogs() {
-        progressBar.visibility = View.VISIBLE
+        loadingAnimationView.visibility = View.VISIBLE // Show animation during loading
         emptyStateTextView.visibility = View.GONE
         recyclerView.visibility = View.GONE
 
@@ -94,8 +109,37 @@ class CallLogsFragment : Fragment() {
                 Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                 emptyStateTextView.visibility = View.VISIBLE
             } finally {
-                progressBar.visibility = View.GONE
+                loadingAnimationView.visibility = View.GONE // Hide animation after loading
             }
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Pause animation when fragment is paused
+        if (::loadingAnimationView.isInitialized) {
+            loadingAnimationView.pauseAnimation()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Resume animation when fragment is resumed
+        if (::loadingAnimationView.isInitialized) {
+            try {
+                loadingAnimationView.playAnimation()
+            } catch (e: Exception) {
+                Toast.makeText(context, "Failed to resume animation: ${e.message}", Toast.LENGTH_LONG).show()
+                loadingAnimationView.visibility = View.GONE
+            }
+        }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        // Cancel animation when view is destroyed
+        if (::loadingAnimationView.isInitialized) {
+            loadingAnimationView.cancelAnimation()
         }
     }
 }

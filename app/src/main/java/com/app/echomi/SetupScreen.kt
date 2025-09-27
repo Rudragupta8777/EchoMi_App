@@ -40,8 +40,9 @@ class SetupScreen : AppCompatActivity() {
 
         // Handle the "Continue" button click
         continueButton.setOnClickListener {
-            Toast.makeText(this, "Navigating to next step...", Toast.LENGTH_SHORT).show()
-            val intent = Intent(this, ContactSelectionScreen::class.java)
+            Toast.makeText(this, "Setup completed!", Toast.LENGTH_SHORT).show()
+            // Navigate to MainActivity instead of ContactSelectionScreen
+            val intent = Intent(this, MainActivity::class.java)
             startActivity(intent)
             finish()
         }
@@ -55,17 +56,14 @@ class SetupScreen : AppCompatActivity() {
 
     private fun openCallForwardingSettings() {
         try {
-            // This is the most reliable, standard intent for opening call settings on modern Android.
             val intent = Intent(TelecomManager.ACTION_SHOW_CALL_SETTINGS)
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
             startActivity(intent)
         } catch (e: Exception) {
-            // If the standard intent fails, try the older, non-standard one.
             try {
                 val fallbackIntent = Intent("com.android.phone.CallFeaturesSetting")
                 startActivity(fallbackIntent)
             } catch (fallbackException: Exception) {
-                // If both fail, inform the user and open the dialer as the absolute last resort.
                 Toast.makeText(this, "Could not open settings directly. Opening dialer.", Toast.LENGTH_LONG).show()
                 try {
                     val finalFallback = Intent(Intent.ACTION_DIAL)

@@ -72,4 +72,7 @@ dependencies {
 
 // Add this line for the BlurView library
     implementation("com.github.Dimezis:BlurView:version-2.0.3")
+
+    // build.gradle.kts (Module :app)
+    implementation("com.airbnb.android:lottie:6.5.0")
 }

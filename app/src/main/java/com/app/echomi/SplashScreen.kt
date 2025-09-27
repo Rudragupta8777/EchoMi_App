@@ -11,23 +11,89 @@ import android.provider.Settings
 import android.util.Log
 import android.view.View
 import android.widget.Button
-import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.airbnb.lottie.LottieAnimationView
 import com.app.echomi.Network.RetrofitInstance
 import com.app.echomi.Services.MyFirebaseMessagingService
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 
 class SplashScreen : AppCompatActivity() {
-    private lateinit var progressBar: ProgressBar
+    private lateinit var loadingAnimationView: LottieAnimationView
     private lateinit var statusTextView: TextView
     private lateinit var retryButton: Button
+    private lateinit var auth: FirebaseAuth
 
     private val REQUEST_CODE_NOTIFICATIONS = 1001
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+
+        // Initialize Firebase Auth
+        auth = Firebase.auth
+
+        // Check if user is already logged in
+        checkUserAuthentication()
+    }
+
+    private fun checkUserAuthentication() {
+        val currentUser = auth.currentUser
+
+        if (currentUser != null) {
+            // User is already logged in, proceed to MainActivity
+            Log.d(TAG, "User already authenticated: ${currentUser.email}")
+            navigateToMainActivity()
+        } else {
+            // User is not logged in, show splash screen and check backend
+            setContentView(R.layout.activity_splash_screen)
+            initializeViews()
+            requestPermissions()
+            checkBackendStatus()
+        }
+    }
+
+    private fun initializeViews() {
+        loadingAnimationView = findViewById(R.id.loadingAnimationView)
+        statusTextView = findViewById(R.id.statusTextView)
+        retryButton = findViewById(R.id.retryButton)
+
+        retryButton.setOnClickListener {
+            checkBackendStatus()
+        }
+
+        // Configure Lottie animation with error handling
+        try {
+            loadingAnimationView.speed = 1.0f
+            loadingAnimationView.playAnimation() // Ensure animation plays (redundant with autoPlay=true)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load animation: ${e.message}")
+            loadingAnimationView.visibility = View.GONE // Hide animation on failure
+        }
+
+        // Add failure listener for Lottie animation
+        loadingAnimationView.addLottieOnCompositionLoadedListener { composition ->
+            if (composition == null) {
+                Log.e(TAG, "Failed to load Lottie animation")
+                loadingAnimationView.visibility = View.GONE // Hide animation on failure
+            }
+        }
+
+        MyFirebaseMessagingService.stopEmergencyAlarm()
+    }
+
+    private fun requestPermissions() {
+        requestNotificationPermission()
+        requestDoNotDisturbPermission()
+        requestSmsPermissions()
+    }
 
     private fun requestDoNotDisturbPermission() {
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
@@ -75,50 +141,15 @@ class SplashScreen : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUEST_CODE_NOTIFICATIONS) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Log.d("MainActivity", "✅ Notification permission granted")
+                Log.d(TAG, "✅ Notification permission granted")
             } else {
-                Log.w("MainActivity", "❌ Notification permission denied")
+                Log.w(TAG, "❌ Notification permission denied")
             }
         }
-    }
-
-
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        requestNotificationPermission()
-        requestDoNotDisturbPermission()
-        requestSmsPermissions() // Add this line
-        setContentView(R.layout.activity_splash_screen)
-
-
-        MyFirebaseMessagingService.stopEmergencyAlarm()
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val permissions = arrayOf(
-                Manifest.permission.RECEIVE_SMS,
-                Manifest.permission.READ_SMS,
-                Manifest.permission.POST_NOTIFICATIONS
-            )
-            if (permissions.any { ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED }) {
-                ActivityCompat.requestPermissions(this, permissions, 101)
-            }
-        }
-
-        progressBar = findViewById(R.id.progressBar)
-        statusTextView = findViewById(R.id.statusTextView)
-        retryButton = findViewById(R.id.retryButton)
-
-        retryButton.setOnClickListener {
-            checkBackendStatus()
-        }
-
-        checkBackendStatus()
     }
 
     private fun checkBackendStatus() {
-        progressBar.visibility = View.VISIBLE
+        loadingAnimationView.visibility = View.VISIBLE
         statusTextView.text = "Connecting to service..."
         retryButton.visibility = View.GONE
 
@@ -128,22 +159,57 @@ class SplashScreen : AppCompatActivity() {
                 if (response.isSuccessful) {
                     // Backend is reachable, proceed to Login
                     startActivity(Intent(this@SplashScreen, LoginScreen::class.java))
-                    Log.d(TAG, "Backend Connected ✅")
+                    Log.d(TAG, "Backend Connected ✅ - Navigating to Login")
                     finish()
                 } else {
                     showError()
                 }
             } catch (e: Exception) {
                 Log.d(TAG, "Backend Not Connected ❌")
-                // Network error or backend is down
                 showError()
             }
         }
     }
 
+    private fun navigateToMainActivity() {
+        // Directly navigate to MainActivity without checking backend
+        val intent = Intent(this, MainActivity::class.java)
+        startActivity(intent)
+        finish()
+    }
+
     private fun showError() {
-        progressBar.visibility = View.GONE
+        loadingAnimationView.visibility = View.GONE
         statusTextView.text = "Connection failed. Please try again."
         retryButton.visibility = View.VISIBLE
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Pause animation when activity is paused
+        if (::loadingAnimationView.isInitialized) {
+            loadingAnimationView.pauseAnimation()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Resume animation when activity is resumed
+        if (::loadingAnimationView.isInitialized) {
+            try {
+                loadingAnimationView.playAnimation()
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to resume animation: ${e.message}")
+                loadingAnimationView.visibility = View.GONE
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Cancel animation when activity is destroyed
+        if (::loadingAnimationView.isInitialized) {
+            loadingAnimationView.cancelAnimation()
+        }
     }
 }
