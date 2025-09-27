@@ -110,22 +110,38 @@ class ContactSelectionScreen : AppCompatActivity() {
                     savedContactsResponse.body() ?: emptyList()
                 else
                     emptyList()
-                val savedPhoneNumbers = savedContacts.map { it.phoneNumber }.toSet()
+
+                // Create a map for quick lookup by phone number (normalized)
+                val savedContactsMap = savedContacts.associateBy {
+                    normalizePhoneNumber(it.phoneNumber)
+                }
 
                 // Step 2: Load phone contacts
                 val phoneContacts = loadContactsFromPhone()
 
-                // Step 3: Merge backend saved contacts with phone contacts
+                // Step 3: Merge backend saved contacts with phone contacts (remove duplicates)
+                val mergedContacts = mutableListOf<Contact>()
+                val processedPhoneNumbers = mutableSetOf<String>()
+
                 phoneContacts.forEach { contact ->
-                    if (contact.phoneNumber in savedPhoneNumbers) {
-                        contact.role = "family"
+                    val normalizedNumber = normalizePhoneNumber(contact.phoneNumber)
+
+                    // Check if we've already processed this number (avoid duplicates)
+                    if (processedPhoneNumbers.add(normalizedNumber)) {
+                        // Check if this contact exists in saved contacts
+                        val savedContact = savedContactsMap[normalizedNumber]
+                        if (savedContact != null) {
+                            // Use the saved contact's role
+                            contact.role = savedContact.role ?: "" // Handle null role
+                        }
+                        mergedContacts.add(contact)
                     }
                 }
 
                 // Step 4: Update UI
                 withContext(Dispatchers.Main) {
                     fullContactsList.clear()
-                    fullContactsList.addAll(phoneContacts)
+                    fullContactsList.addAll(mergedContacts)
                     sortAndFilterList()
                 }
 
@@ -141,27 +157,88 @@ class ContactSelectionScreen : AppCompatActivity() {
         }
     }
 
+    private fun deduplicateContacts(
+        phoneContacts: List<Contact>,
+        savedContactsMap: Map<String, CategorizedContact>
+    ): List<Contact> {
+        val mergedContacts = mutableListOf<Contact>()
+        val processedNumbers = mutableSetOf<String>()
+        val processedNames = mutableSetOf<String>()
+
+        phoneContacts.forEach { contact ->
+            val normalizedNumber = normalizePhoneNumber(contact.phoneNumber)
+
+            // Check for duplicates by both number and name
+            val isDuplicateByNumber = normalizedNumber in processedNumbers
+            val isDuplicateByName = contact.name in processedNames
+
+            if (!isDuplicateByNumber && !isDuplicateByName) {
+                // Apply saved role if exists
+                val savedContact = savedContactsMap[normalizedNumber]
+                if (savedContact != null) {
+                    contact.role = savedContact.role
+                }
+
+                mergedContacts.add(contact)
+                processedNumbers.add(normalizedNumber)
+                processedNames.add(contact.name)
+            }
+        }
+
+        return mergedContacts
+    }
+
+    // Enhanced normalization function
+    private fun normalizePhoneNumber(phoneNumber: String): String {
+        var normalized = phoneNumber.replace("[^0-9+]".toRegex(), "")
+
+        // Remove country code if it's a US number for better matching
+        if (normalized.startsWith("+1")) {
+            normalized = normalized.substring(2)
+        } else if (normalized.startsWith("1") && normalized.length == 11) {
+            normalized = normalized.substring(1)
+        }
+
+        // Take only last 10 digits (standard US number)
+        if (normalized.length > 10) {
+            normalized = normalized.substring(normalized.length - 10)
+        }
+
+        return normalized
+    }
+
     private suspend fun loadContactsFromPhone(): List<Contact> = withContext(Dispatchers.IO) {
         val tempContactList = mutableListOf<Contact>()
+        val processedNumbers = mutableSetOf<String>()
+
         val projection = arrayOf(
             ContactsContract.CommonDataKinds.Phone._ID,
             ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
             ContactsContract.CommonDataKinds.Phone.NUMBER
         )
+
         val cursor = contentResolver.query(
             ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
             projection, null, null,
             ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " ASC"
         )
+
         cursor?.use {
             val idIndex = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone._ID)
             val nameIndex = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
             val numberIndex = it.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER)
+
             while (it.moveToNext()) {
                 val id = it.getString(idIndex)
-                val name = it.getString(nameIndex)
-                val number = it.getString(numberIndex)
-                tempContactList.add(Contact(id, name, number))
+                val name = it.getString(nameIndex) ?: "Unknown"
+                val number = it.getString(numberIndex) ?: ""
+
+                val normalizedNumber = normalizePhoneNumber(number)
+
+                // Avoid adding duplicates from phone contacts itself
+                if (normalizedNumber.isNotEmpty() && processedNumbers.add(normalizedNumber)) {
+                    tempContactList.add(Contact(id, name, number))
+                }
             }
         }
         return@withContext tempContactList

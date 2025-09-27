@@ -22,6 +22,7 @@ import androidx.core.content.ContextCompat
 import com.app.echomi.Network.RetrofitInstance
 import com.app.echomi.R
 import com.app.echomi.SplashScreen
+import com.app.echomi.data.ApprovalRequest
 import com.echomi.app.network.FcmTokenRequest
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.messaging.FirebaseMessagingService
@@ -63,8 +64,37 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         when (remoteMessage.data["type"]) {
             "emergency_alert" -> handleEmergencyAlert(remoteMessage)
             "fetch_sms_request" -> handleSmsFetchRequest(remoteMessage)
+            "otp_approval_request" -> handleOtpApprovalRequest(remoteMessage) // Add this line
             else -> Log.w(TAG, "Unknown FCM type: ${remoteMessage.data["type"]}")
         }
+    }
+
+    // Add this new function
+    private fun handleOtpApprovalRequest(remoteMessage: RemoteMessage) {
+        Log.d(TAG, "🔐 OTP Approval request received!")
+
+        val approvalId = remoteMessage.data["approvalId"] ?: ""
+        val company = remoteMessage.data["company"] ?: "Unknown Company"
+        val callerNumber = remoteMessage.data["callerNumber"] ?: "Unknown Number"
+        val callSid = remoteMessage.data["callSid"] ?: ""
+
+        if (approvalId.isEmpty()) {
+            Log.e(TAG, "❌ OTP approval request missing approvalId")
+            return
+        }
+
+        val approvalRequest = ApprovalRequest(
+            approvalId = approvalId,
+            company = company,
+            callerNumber = callerNumber,
+            callSid = callSid,
+            timestamp = System.currentTimeMillis()
+        )
+
+        // Show approval notification
+        ApprovalService(this).showApprovalNotification(approvalRequest)
+
+        Log.d(TAG, "✅ OTP approval notification shown for $company")
     }
 
     private fun handleEmergencyAlert(remoteMessage: RemoteMessage) {

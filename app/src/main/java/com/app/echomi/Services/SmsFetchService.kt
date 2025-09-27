@@ -100,7 +100,15 @@ class SmsFetchService : Service() {
                 val response = RetrofitInstance.api.storeSmsMessages(authHeader, request)
 
                 if (response.isSuccessful) {
-                    Log.d(TAG, "✅ Successfully stored ${smsMessages.size} SMS for call $callSid")
+                    val responseBody = response.body()
+                    Log.d(TAG, "✅ Backend response: ${responseBody?.message}")
+
+                    // ✅ Handle duplicate case
+                    if (responseBody?.alreadyExists == true) {
+                        Log.d(TAG, "📱 SMS already stored for this call. No new messages added.")
+                    } else {
+                        Log.d(TAG, "✅ Successfully stored ${smsMessages.size} SMS for call $callSid")
+                    }
                 } else {
                     Log.e(TAG, "❌ Failed to store SMS: ${response.code()} - ${response.errorBody()?.string()}")
                 }

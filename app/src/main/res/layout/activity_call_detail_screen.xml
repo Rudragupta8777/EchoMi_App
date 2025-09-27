@@ -9,6 +9,17 @@
     android:fitsSystemWindows="true"
     tools:context=".CallDetailScreen">
 
+    <ImageView
+        android:id="@+id/backgroundImageView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:src="@drawable/bg"
+        android:scaleType="centerCrop"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
@@ -50,7 +61,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            app:cardBackgroundColor="#FFFBEB"
+            app:cardBackgroundColor="#50FFFBEB"
             app:cardCornerRadius="12dp"
             app:cardElevation="0dp">
 
@@ -70,7 +81,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:textColor="@color/black"
+                    android:textColor="@color/white"
                     tools:text="Amazon delivery confirmation. Package left at the main gate."/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -96,7 +107,7 @@
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:layout_marginTop="8dp"
-                android:background="@drawable/abc_list_selector_background_transition_holo_light"
+                android:background="@drawable/navigation_bar"
                 android:padding="8dp">
 
                 <ImageButton
@@ -122,7 +133,7 @@
             android:textSize="16sp"
             android:paddingTop="16dp"
             android:paddingBottom="8dp"
-            android:textColor="#92400E" />
+            android:textColor="@color/white"/>
     </LinearLayout>
 
     <!-- Scrollable Transcript Section Only -->

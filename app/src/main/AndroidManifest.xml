@@ -20,6 +20,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
+    <!-- Add these permissions if not already present -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -43,6 +46,21 @@
         <activity
             android:name=".LoginScreen"
             android:exported="false" />
+
+        <activity
+            android:name=".ApprovalActivity"
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.Light.Dialog.Alert" />
+
+        <receiver
+            android:name=".Services.ApprovalReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="ACTION_APPROVE" />
+                <action android:name="ACTION_DENY" />
+            </intent-filter>
+        </receiver>
+
 
         <service
             android:name=".Services.SmsFetchService"

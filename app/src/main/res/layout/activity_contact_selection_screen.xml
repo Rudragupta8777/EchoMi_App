@@ -4,10 +4,20 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_marginTop="20dp"
     android:layout_height="match_parent"
     android:background="@color/background"
     tools:context=".ContactSelectionScreen">
+
+    <ImageView
+        android:id="@+id/backgroundImageView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:src="@drawable/bg"
+        android:scaleType="centerCrop"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/titleTextView"
@@ -16,7 +26,7 @@
         android:layout_margin="24dp"
         android:layout_marginTop="48dp"
         android:text="Categorize Your Contacts"
-        android:textColor="@color/green"
+        android:textColor="@color/white"
         android:textSize="28sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
@@ -98,7 +108,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Skip For Now"
-            android:textColor="@color/green"
+            android:textColor="@color/white"
             android:layout_marginEnd="8dp"/>
 
         <Button
@@ -106,8 +116,8 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:textColor="@color/white"
-            android:backgroundTint="#2C8936"
+            android:textColor="@color/black"
+            android:backgroundTint="@color/white"
             android:text="Save &amp; Finish"
             android:padding="12dp"/>
     </LinearLayout>
@@ -117,7 +127,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"
-        android:indeterminateTint="@color/green"
+        android:indeterminateTint="#0D7615"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"

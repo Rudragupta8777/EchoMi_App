@@ -69,4 +69,7 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics-ktx")
 
     implementation("androidx.lifecycle:lifecycle-service:2.8.4")
+
+// Add this line for the BlurView library
+    implementation("com.github.Dimezis:BlurView:version-2.0.3")
 }
