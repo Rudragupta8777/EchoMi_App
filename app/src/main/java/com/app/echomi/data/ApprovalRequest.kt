@@ -10,14 +10,4 @@ data class ApprovalRequest(
     @SerializedName("timestamp") val timestamp: Long
 )
 
-data class ApprovalResponse(
-    @SerializedName("approvalId") val approvalId: String,
-    @SerializedName("approved") val approved: Boolean,
-    @SerializedName("userId") val userId: String? = null
-)
 
-data class ApprovalStatus(
-    @SerializedName("success") val success: Boolean,
-    @SerializedName("message") val message: String? = null,
-    @SerializedName("action") val action: String? = null
-)

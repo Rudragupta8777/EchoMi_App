@@ -56,16 +56,12 @@ interface ApiService {
         @Query("orderId") orderId: String? = null
     ): Response<OtpResponse>
 
-    // Add this new endpoint for storing SMS messages
-    // MODIFY this endpoint to accept the Authorization header
-    // Update the SMS store endpoint
     @POST("api/sms/call/store")
     suspend fun storeSmsMessages(
         @Header("Authorization") authToken: String,
         @Body request: SmsStoreRequest
     ): Response<SmsStoreResponse> // ✅ Change from Unit to SmsStoreResponse
 
-    // Add to your existing ApiService interface
 
     @POST("api/otp/approve")
     suspend fun approveOtpSharing(

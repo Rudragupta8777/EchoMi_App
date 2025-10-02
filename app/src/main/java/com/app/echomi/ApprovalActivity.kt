@@ -1,8 +1,6 @@
 package com.app.echomi
 
 import android.os.Bundle
-import android.widget.Button
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.app.echomi.Services.ApprovalService
 import com.app.echomi.databinding.ActivityApprovalBinding
