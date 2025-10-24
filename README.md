@@ -1,6 +1,6 @@
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/Rudragupta8777/EchoMi_App/main/app/src/main/res/drawable/app_logo.png" alt="EchoMi Logo" width="60%" />
+  <img src="https://raw.githubusercontent.com/Rudragupta8777/EchoMi_App/main/app/src/main/res/drawable/app_logo.png" alt="EchoMi Logo" width="40%" />
 
   # EchoMi: Your Personal AI Call Assistant
 
