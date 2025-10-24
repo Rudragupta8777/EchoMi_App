@@ -24,6 +24,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_margin="24dp"
+        android:typeface="serif"
         android:layout_marginTop="48dp"
         android:text="Categorize Your Contacts"
         android:textColor="@color/white"
@@ -40,6 +41,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
         android:layout_marginEnd="24dp"
+        android:typeface="serif"
         android:layout_marginTop="8dp"
         android:textColor="@color/white"
         android:text="Help your assistant recognize important callers. This is optional."
@@ -55,7 +57,11 @@
         android:layout_marginTop="15dp"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
-        android:backgroundTint="#282A2C"
+        app:cardBackgroundColor="#A18C8383"
+        app:cardElevation="0dp"
+        app:cardCornerRadius="12dp"
+        app:strokeWidth="1.5dp"
+        app:strokeColor="#A3908D8D"
         app:layout_constraintTop_toBottomOf="@id/subtitleTextView">
 
         <ImageView
@@ -70,6 +76,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_marginStart="60dp"
+            android:typeface="serif"
             android:layout_marginEnd="10dp"
             android:hint="Search"
             android:textCursorDrawable="@color/white"
@@ -105,6 +112,7 @@
             style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:typeface="serif"
             android:layout_weight="1"
             android:text="Skip For Now"
             android:textColor="@color/white"
@@ -114,6 +122,7 @@
             android:id="@+id/saveButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:typeface="serif"
             android:layout_weight="1"
             android:textColor="@color/black"
             android:backgroundTint="@color/white"
@@ -124,8 +133,8 @@
 
     <com.airbnb.lottie.LottieAnimationView
         android:id="@+id/loadingAnimationView"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
         android:visibility="gone"
         app:lottie_rawRes="@raw/cool"
         app:lottie_autoPlay="true"

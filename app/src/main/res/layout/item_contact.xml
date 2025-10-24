@@ -23,6 +23,7 @@
             android:layout_height="match_parent"
             android:text="Contact Name"
             android:textColor="@color/white"
+            android:typeface="serif"
             android:textSize="16sp"
             android:textStyle="bold" />
 
@@ -31,10 +32,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="#C3FFFFFF"
+            android:typeface="serif"
             android:text="+1 123-456-7890"/>
     </LinearLayout>
 
-    <!-- SPINNER REPLACED WITH CHECKBOX -->
     <CheckBox
         android:id="@+id/familyCheckBox"
         android:layout_width="wrap_content"

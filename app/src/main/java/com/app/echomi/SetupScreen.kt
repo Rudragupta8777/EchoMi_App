@@ -42,7 +42,7 @@ class SetupScreen : AppCompatActivity() {
         continueButton.setOnClickListener {
             Toast.makeText(this, "Setup completed!", Toast.LENGTH_SHORT).show()
             // Navigate to MainActivity instead of ContactSelectionScreen
-            val intent = Intent(this, MainActivity::class.java)
+            val intent = Intent(this, ContactSelectionScreen::class.java)
             startActivity(intent)
             finish()
         }

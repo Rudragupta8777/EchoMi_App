@@ -28,6 +28,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Caller"
+                android:typeface="serif"
                 android:textStyle="bold"
                 android:textSize="12sp"
                 android:textColor="@color/caller_color" />
@@ -37,6 +38,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="00:00:00"
+                android:typeface="serif"
                 android:textSize="10sp"
                 android:textColor="@color/secondary_text_color" />
 

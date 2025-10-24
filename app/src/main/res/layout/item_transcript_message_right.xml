@@ -33,6 +33,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:typeface="serif"
                 android:text="AI Assistant"
                 android:textStyle="bold"
                 android:textSize="12sp"
@@ -43,6 +44,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="00:00:00"
+                android:typeface="serif"
                 android:textSize="10sp"
                 android:textColor="@color/secondary_text_color" />
 
