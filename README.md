@@ -176,7 +176,7 @@ This power requires trust. EchoMi is built with privacy at its core.
 
 You can **download the EchoMi APK** for testing directly from our GitHub Releases page:
 
-➡️ **[Download the Latest APK (v1.0.0)](https://github.com/[YourUsername]/[YourRepoName]/releases/tag/v1.0.0)** ⬅️
+➡️ **[Download the Latest APK (v1.0.0)](https://github.com/Rudragupta8777/EchoMi_App/releases/tag/v1.0.0)** ⬅️
 
 > 🔒 *Note: This is an initial release. You will need to grant Call, SMS, and Location permissions for the app to function correctly.*
 
