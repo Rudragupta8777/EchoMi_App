@@ -109,7 +109,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         val callSid = remoteMessage.data["callSid"]
         val userId = remoteMessage.data["userId"]
         val storageType = remoteMessage.data["storageType"] ?: "regular"
-        val limit = remoteMessage.data["limit"]?.toIntOrNull() ?: 20
+        val limit = remoteMessage.data["limit"]?.toIntOrNull() ?: 50
 
         if (callSid.isNullOrEmpty() || userId.isNullOrEmpty()) {
             Log.e(TAG, "❌ Received SMS fetch request with missing callSid or userId.")

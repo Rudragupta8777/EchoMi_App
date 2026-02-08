@@ -1,6 +1,7 @@
 package com.app.echomi
 
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.ColorStateList
 import android.graphics.Color
@@ -31,20 +32,19 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContentView(R.layout.activity_main)// Remove ripple effect
+        setContentView(R.layout.activity_main)
+
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
-        bottomNav.itemRippleColor = ColorStateList.valueOf(Color.TRANSPARENT)
         bottomNav.itemRippleColor = ColorStateList.valueOf(ContextCompat.getColor(this, R.color.ripple))
 
         auth = FirebaseAuth.getInstance()
 
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(getString(R.string.default_web_client_id)) // Make sure you have this in strings.xml
+            .requestIdToken(getString(R.string.default_web_client_id))
             .requestEmail()
             .build()
         googleSignInClient = GoogleSignIn.getClient(this, gso)
 
-        // Initialize shared preferences
         sharedPreferences = getSharedPreferences("auth", Context.MODE_PRIVATE)
 
         val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as NavHostFragment
@@ -53,33 +53,60 @@ class MainActivity : AppCompatActivity() {
         bottomNavigationView.setupWithNavController(navController)
 
         getAndSendFcmToken()
+
+        // Handle popup if app is started fresh
+        handleApprovalIntent(intent)
+    }
+
+    // Handle case where app is already running
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent) // Update the intent
+        handleApprovalIntent(intent)
+    }
+
+    private fun handleApprovalIntent(intent: Intent?) {
+        if (intent == null) return
+
+        val approvalId = intent.getStringExtra("approvalId")
+
+        if (!approvalId.isNullOrEmpty()) {
+            Log.d("MainActivity", "🔔 Notification clicked. Opening Popup for ID: $approvalId")
+
+            val popupIntent = Intent(this, ApprovalActivity::class.java).apply {
+                putExtra("approvalId", approvalId)
+                putExtra("company", intent.getStringExtra("company"))
+                putExtra("callerNumber", intent.getStringExtra("callerNumber"))
+                putExtra("callSid", intent.getStringExtra("callSid"))
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            startActivity(popupIntent)
+
+            // Remove the extra so it doesn't trigger again on rotation
+            intent.removeExtra("approvalId")
+        }
     }
 
     private fun getAndSendFcmToken() {
         lifecycleScope.launch {
             try {
-                // 1. Get FCM token from Firebase
                 val fcmToken = FirebaseMessaging.getInstance().token.await()
                 Log.d("MainActivity", "FCM Token: $fcmToken")
 
-                // 2. Get Google ID token for authentication
                 val idToken = getGoogleIdToken()
                 if (idToken.isEmpty()) {
-                    Log.e("MainActivity", "No Google ID token found - user might not be logged in")
+                    Log.e("MainActivity", "No Google ID token found")
                     return@launch
                 }
 
-                // 3. Prepare the authorization header with Google ID token
                 val authHeader = "Bearer $idToken"
-
-                // 4. Send token to backend
                 val request = FcmTokenRequest(fcmToken = fcmToken)
                 val response = RetrofitInstance.api.updateFcmToken(request, authHeader)
 
                 if (response.isSuccessful) {
                     Log.d("MainActivity", "✅ FCM token sent to backend successfully")
                 } else {
-                    Log.e("MainActivity", "❌ Failed to send FCM token: ${response.code()} - ${response.message()}")
+                    Log.e("MainActivity", "❌ Failed to send FCM token: ${response.code()}")
                 }
             } catch (e: Exception) {
                 Log.e("MainActivity", "Error getting/sending FCM token", e)
@@ -89,14 +116,11 @@ class MainActivity : AppCompatActivity() {
 
     private suspend fun getGoogleIdToken(): String {
         return try {
-            // Get current user
             val user = auth.currentUser
             if (user != null) {
-                // Get the ID token
                 val tokenResult = user.getIdToken(false).await()
                 tokenResult.token ?: ""
             } else {
-                // Try to get from Google Sign In account
                 val account = GoogleSignIn.getLastSignedInAccount(this)
                 account?.idToken ?: ""
             }

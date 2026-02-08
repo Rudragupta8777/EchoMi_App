@@ -2,7 +2,6 @@ package com.app.echomi
 
 import android.Manifest
 import android.app.NotificationManager
-import android.content.ContentValues.TAG
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -33,14 +32,20 @@ class SplashScreen : AppCompatActivity() {
 
     private val REQUEST_CODE_NOTIFICATIONS = 1001
 
+    companion object {
+        private const val TAG = "SplashScreen"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Initialize Firebase Auth
-        auth = Firebase.auth
+        // Debug log to see if data reached SplashScreen
+        if (intent.hasExtra("approvalId")) {
+            Log.d(TAG, "🔔 SplashScreen received Approval ID: ${intent.getStringExtra("approvalId")}")
+        }
 
-        // Check if user is already logged in
+        auth = Firebase.auth
         checkUserAuthentication()
     }
 
@@ -48,17 +53,33 @@ class SplashScreen : AppCompatActivity() {
         val currentUser = auth.currentUser
 
         if (currentUser != null) {
-            // User is already logged in, proceed to MainActivity
             Log.d(TAG, "User already authenticated: ${currentUser.email}")
             navigateToMainActivity()
         } else {
-            // User is not logged in, show splash screen and check backend
             setContentView(R.layout.activity_splash_screen)
             initializeViews()
             requestPermissions()
             checkBackendStatus()
         }
     }
+
+    // --- CRITICAL FIX START ---
+    private fun navigateToMainActivity() {
+        val mainIntent = Intent(this, MainActivity::class.java)
+
+        // COPY ALL DATA (EXTRAS) FROM NOTIFICATION TO MAIN ACTIVITY
+        if (intent.extras != null) {
+            Log.d(TAG, "➡️ Forwarding extras to MainActivity")
+            mainIntent.putExtras(intent.extras!!)
+        }
+
+        // Ensure the flags are clean
+        mainIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+
+        startActivity(mainIntent)
+        finish()
+    }
+    // --- CRITICAL FIX END ---
 
     private fun initializeViews() {
         loadingAnimationView = findViewById(R.id.loadingAnimationView)
@@ -69,20 +90,18 @@ class SplashScreen : AppCompatActivity() {
             checkBackendStatus()
         }
 
-        // Configure Lottie animation with error handling
         try {
             loadingAnimationView.speed = 1.0f
-            loadingAnimationView.playAnimation() // Ensure animation plays (redundant with autoPlay=true)
+            loadingAnimationView.playAnimation()
         } catch (e: Exception) {
             Log.e(TAG, "Failed to load animation: ${e.message}")
-            loadingAnimationView.visibility = View.GONE // Hide animation on failure
+            loadingAnimationView.visibility = View.GONE
         }
 
-        // Add failure listener for Lottie animation
         loadingAnimationView.addLottieOnCompositionLoadedListener { composition ->
             if (composition == null) {
                 Log.e(TAG, "Failed to load Lottie animation")
-                loadingAnimationView.visibility = View.GONE // Hide animation on failure
+                loadingAnimationView.visibility = View.GONE
             }
         }
 
@@ -157,59 +176,20 @@ class SplashScreen : AppCompatActivity() {
             try {
                 val response = RetrofitInstance.api.healthCheck()
                 if (response.isSuccessful) {
-                    // Backend is reachable, proceed to Login
                     startActivity(Intent(this@SplashScreen, LoginScreen::class.java))
-                    Log.d(TAG, "Backend Connected ✅ - Navigating to Login")
                     finish()
                 } else {
                     showError()
                 }
             } catch (e: Exception) {
-                Log.d(TAG, "Backend Not Connected ❌")
                 showError()
             }
         }
-    }
-
-    private fun navigateToMainActivity() {
-        // Directly navigate to MainActivity without checking backend
-        val intent = Intent(this, MainActivity::class.java)
-        startActivity(intent)
-        finish()
     }
 
     private fun showError() {
         loadingAnimationView.visibility = View.GONE
         statusTextView.text = "Connection failed. Please try again."
         retryButton.visibility = View.VISIBLE
-    }
-
-    override fun onPause() {
-        super.onPause()
-        // Pause animation when activity is paused
-        if (::loadingAnimationView.isInitialized) {
-            loadingAnimationView.pauseAnimation()
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        // Resume animation when activity is resumed
-        if (::loadingAnimationView.isInitialized) {
-            try {
-                loadingAnimationView.playAnimation()
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to resume animation: ${e.message}")
-                loadingAnimationView.visibility = View.GONE
-            }
-        }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        // Cancel animation when activity is destroyed
-        if (::loadingAnimationView.isInitialized) {
-            loadingAnimationView.cancelAnimation()
-        }
     }
 }

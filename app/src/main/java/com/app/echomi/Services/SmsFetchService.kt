@@ -48,7 +48,7 @@ class SmsFetchService : Service() {
         val callSid = intent?.getStringExtra(EXTRA_CALL_SID) ?: ""
         val userId = intent?.getStringExtra(EXTRA_USER_ID) ?: ""
         val storageType = intent?.getStringExtra(EXTRA_STORAGE_TYPE) ?: "regular"
-        val limit = intent?.getIntExtra(EXTRA_LIMIT, 20) ?: 20
+        val limit = intent?.getIntExtra(EXTRA_LIMIT, 50) ?: 50
 
         if (callSid.isEmpty() || userId.isEmpty()) {
             Log.e(TAG, "❌ Missing required intent data. Stopping service.")

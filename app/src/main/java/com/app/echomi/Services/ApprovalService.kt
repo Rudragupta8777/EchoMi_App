@@ -11,8 +11,8 @@ import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
-import com.app.echomi.ApprovalActivity
 import com.app.echomi.R
+import com.app.echomi.SplashScreen // Target SplashScreen
 import com.app.echomi.data.ApprovalRequest
 import com.app.echomi.data.ApprovalResponse
 import com.app.echomi.Network.RetrofitInstance
@@ -24,14 +24,13 @@ import kotlinx.coroutines.withContext
 class ApprovalService(private val context: Context) {
 
     companion object {
-        private const val TAG = "ApprovalService" // Moved TAG inside companion object
+        private const val TAG = "ApprovalService"
         private const val CHANNEL_ID = "otp_approval_channel"
         private const val NOTIFICATION_ID = 2001
         private const val ACTION_APPROVE = "ACTION_APPROVE"
         private const val ACTION_DENY = "ACTION_DENY"
         private const val EXTRA_APPROVAL_ID = "extra_approval_id"
         private const val EXTRA_COMPANY = "extra_company"
-        private const val EXTRA_CALLER_NUMBER = "extra_caller_number"
     }
 
     init {
@@ -56,35 +55,36 @@ class ApprovalService(private val context: Context) {
     }
 
     fun showApprovalNotification(approvalRequest: ApprovalRequest) {
-        // Check notification permission first
         if (!hasNotificationPermission()) {
             Log.w(TAG, "Cannot show approval notification: POST_NOTIFICATIONS permission denied")
             return
         }
 
-        // Create intent for ApprovalActivity
-        val intent = Intent(context, ApprovalActivity::class.java).apply {
+        // --- UPDATED: Target SplashScreen ---
+        val intent = Intent(context, SplashScreen::class.java).apply {
             putExtra("approvalId", approvalRequest.approvalId)
             putExtra("company", approvalRequest.company)
             putExtra("callerNumber", approvalRequest.callerNumber)
             putExtra("callSid", approvalRequest.callSid)
+            putExtra("is_notification_launch", true)
+
+            // Flags to clear stack and start fresh
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
 
         val pendingIntent = PendingIntent.getActivity(
             context,
-            0,
+            System.currentTimeMillis().toInt(), // Unique ID
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+        // -----------------------------------
 
-        // Create approve action
         val approveIntent = Intent(context, ApprovalReceiver::class.java).apply {
             action = ACTION_APPROVE
             putExtra(EXTRA_APPROVAL_ID, approvalRequest.approvalId)
             putExtra(EXTRA_COMPANY, approvalRequest.company)
         }
-
         val approvePendingIntent = PendingIntent.getBroadcast(
             context,
             approvalRequest.approvalId.hashCode(),
@@ -92,13 +92,11 @@ class ApprovalService(private val context: Context) {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Create deny action
         val denyIntent = Intent(context, ApprovalReceiver::class.java).apply {
             action = ACTION_DENY
             putExtra(EXTRA_APPROVAL_ID, approvalRequest.approvalId)
             putExtra(EXTRA_COMPANY, approvalRequest.company)
         }
-
         val denyPendingIntent = PendingIntent.getBroadcast(
             context,
             approvalRequest.approvalId.hashCode() + 1,
@@ -107,7 +105,6 @@ class ApprovalService(private val context: Context) {
         )
 
         try {
-            // Build notification
             val notification = NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_shield)
                 .setContentTitle("OTP Sharing Request")
@@ -116,18 +113,10 @@ class ApprovalService(private val context: Context) {
                     .bigText("A delivery person from ${approvalRequest.company} is requesting OTP verification. Caller: ${approvalRequest.callerNumber}"))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setContentIntent(pendingIntent)
-                .addAction(
-                    R.drawable.ic_check,
-                    "Approve",
-                    approvePendingIntent
-                )
-                .addAction(
-                    R.drawable.ic_close,
-                    "Deny",
-                    denyPendingIntent
-                )
+                .addAction(R.drawable.ic_check, "Approve", approvePendingIntent)
+                .addAction(R.drawable.ic_close, "Deny", denyPendingIntent)
                 .setAutoCancel(true)
-                .setTimeoutAfter(60000) // Auto-cancel after 1 minute
+                .setTimeoutAfter(60000)
                 .build()
 
             val notificationManager = ContextCompat.getSystemService(context, NotificationManager::class.java)
@@ -148,7 +137,6 @@ class ApprovalService(private val context: Context) {
                 Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
         } else {
-            // Permission is granted by default on older Android versions
             true
         }
     }
