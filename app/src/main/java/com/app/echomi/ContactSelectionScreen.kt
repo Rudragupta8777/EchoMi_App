@@ -10,7 +10,6 @@ import android.text.TextWatcher
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
-import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
@@ -27,7 +26,6 @@ import com.app.echomi.Network.RetrofitInstance
 import com.app.echomi.data.CategorizedContact
 import com.app.echomi.data.Contact
 import com.app.echomi.data.ContactRequest
-import com.google.android.material.card.MaterialCardView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -37,11 +35,12 @@ class ContactSelectionScreen : AppCompatActivity() {
     private lateinit var contactsAdapter: ContactsAdapter
     private lateinit var loadingAnimationView: LottieAnimationView
     private lateinit var searchEditText: EditText
-    private lateinit var backgroundImageView: ImageView
-    private lateinit var titleTextView: TextView
-    private lateinit var subtitleTextView: TextView
-    private lateinit var searchCard: MaterialCardView
-    private lateinit var buttonContainer: LinearLayout
+
+    // Updated Views for New UI
+    private lateinit var headerLayout: LinearLayout
+    private lateinit var searchContainer: LinearLayout
+    private lateinit var actionFooter: LinearLayout
+
     private val fullContactsList = mutableListOf<Contact>()
     private val displayedContactsList = mutableListOf<Contact>()
 
@@ -59,37 +58,23 @@ class ContactSelectionScreen : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_contact_selection_screen)
 
-        // Initialize views
-        backgroundImageView = findViewById(R.id.backgroundImageView)
-        titleTextView = findViewById(R.id.titleTextView)
-        subtitleTextView = findViewById(R.id.subtitleTextView)
-        searchCard = findViewById(R.id.search_card)
+        // Initialize views (Mapped to new XML IDs)
+        headerLayout = findViewById(R.id.headerLayout)
+        searchContainer = findViewById(R.id.searchContainer) // Changed from search_card
+        actionFooter = findViewById(R.id.actionFooter)       // Changed from buttonContainer
+
         recyclerView = findViewById(R.id.contactsRecyclerView)
-        buttonContainer = findViewById(R.id.buttonContainer)
         loadingAnimationView = findViewById(R.id.loadingAnimationView)
         searchEditText = findViewById(R.id.searchEditText)
+
         val saveButton: Button = findViewById(R.id.saveButton)
         val skipButton: Button = findViewById(R.id.skipButton)
 
-        // Configure Lottie animation with error handling
+        // Configure Lottie
         try {
             loadingAnimationView.speed = 1.0f
-            loadingAnimationView.playAnimation() // Ensure animation plays (redundant with autoPlay=true)
         } catch (e: Exception) {
-            Toast.makeText(this, "Failed to load animation: ${e.message}", Toast.LENGTH_LONG).show()
-            loadingAnimationView.visibility = View.GONE // Hide animation on failure
-            // Restore UI elements as fallback
-            showLoading(false)
-        }
-
-        // Add failure listener for Lottie animation
-        loadingAnimationView.addLottieOnCompositionLoadedListener { composition ->
-            if (composition == null) {
-                Toast.makeText(this, "Failed to load Lottie animation", Toast.LENGTH_LONG).show()
-                loadingAnimationView.visibility = View.GONE // Hide animation on failure
-                // Restore UI elements as fallback
-                showLoading(false)
-            }
+            loadingAnimationView.visibility = View.GONE
         }
 
         setupRecyclerView()
@@ -147,7 +132,7 @@ class ContactSelectionScreen : AppCompatActivity() {
                 else
                     emptyList()
 
-                // Create a map for quick lookup by phone number (normalized)
+                // Map for quick lookup
                 val savedContactsMap = savedContacts.associateBy {
                     normalizePhoneNumber(it.phoneNumber)
                 }
@@ -155,20 +140,17 @@ class ContactSelectionScreen : AppCompatActivity() {
                 // Step 2: Load phone contacts
                 val phoneContacts = loadContactsFromPhone()
 
-                // Step 3: Merge backend saved contacts with phone contacts (remove duplicates)
+                // Step 3: Merge
                 val mergedContacts = mutableListOf<Contact>()
                 val processedPhoneNumbers = mutableSetOf<String>()
 
                 phoneContacts.forEach { contact ->
                     val normalizedNumber = normalizePhoneNumber(contact.phoneNumber)
 
-                    // Check if we've already processed this number (avoid duplicates)
                     if (processedPhoneNumbers.add(normalizedNumber)) {
-                        // Check if this contact exists in saved contacts
                         val savedContact = savedContactsMap[normalizedNumber]
                         if (savedContact != null) {
-                            // Use the saved contact's role
-                            contact.role = savedContact.role ?: "" // Handle null role
+                            contact.role = savedContact.role ?: ""
                         }
                         mergedContacts.add(contact)
                     }
@@ -191,48 +173,15 @@ class ContactSelectionScreen : AppCompatActivity() {
         }
     }
 
-    private fun deduplicateContacts(
-        phoneContacts: List<Contact>,
-        savedContactsMap: Map<String, CategorizedContact>
-    ): List<Contact> {
-        val mergedContacts = mutableListOf<Contact>()
-        val processedNumbers = mutableSetOf<String>()
-        val processedNames = mutableSetOf<String>()
-
-        phoneContacts.forEach { contact ->
-            val normalizedNumber = normalizePhoneNumber(contact.phoneNumber)
-
-            // Check for duplicates by both number and name
-            val isDuplicateByNumber = normalizedNumber in processedNumbers
-            val isDuplicateByName = contact.name in processedNames
-
-            if (!isDuplicateByNumber && !isDuplicateByName) {
-                // Apply saved role if exists
-                val savedContact = savedContactsMap[normalizedNumber]
-                if (savedContact != null) {
-                    contact.role = savedContact.role
-                }
-
-                mergedContacts.add(contact)
-                processedNumbers.add(normalizedNumber)
-                processedNames.add(contact.name)
-            }
-        }
-
-        return mergedContacts
-    }
-
     private fun normalizePhoneNumber(phoneNumber: String): String {
         var normalized = phoneNumber.replace("[^0-9+]".toRegex(), "")
 
-        // Remove country code if it's a US number for better matching
         if (normalized.startsWith("+1")) {
             normalized = normalized.substring(2)
         } else if (normalized.startsWith("1") && normalized.length == 11) {
             normalized = normalized.substring(1)
         }
 
-        // Take only last 10 digits (standard US number)
         if (normalized.length > 10) {
             normalized = normalized.substring(normalized.length - 10)
         }
@@ -268,7 +217,6 @@ class ContactSelectionScreen : AppCompatActivity() {
 
                 val normalizedNumber = normalizePhoneNumber(number)
 
-                // Avoid adding duplicates from phone contacts itself
                 if (normalizedNumber.isNotEmpty() && processedNumbers.add(normalizedNumber)) {
                     tempContactList.add(Contact(id, name, number))
                 }
@@ -316,19 +264,31 @@ class ContactSelectionScreen : AppCompatActivity() {
         finish()
     }
 
+    // Updated Loading Logic to handle new Views
     private fun showLoading(isLoading: Boolean) {
-        loadingAnimationView.visibility = if (isLoading) View.VISIBLE else View.GONE
-        backgroundImageView.visibility = if (isLoading) View.GONE else View.VISIBLE
-        titleTextView.visibility = if (isLoading) View.GONE else View.VISIBLE
-        subtitleTextView.visibility = if (isLoading) View.GONE else View.VISIBLE
-        searchCard.visibility = if (isLoading) View.GONE else View.VISIBLE
-        recyclerView.visibility = if (isLoading) View.GONE else View.VISIBLE
-        buttonContainer.visibility = if (isLoading) View.GONE else View.VISIBLE
+        if (isLoading) {
+            loadingAnimationView.visibility = View.VISIBLE
+            loadingAnimationView.playAnimation()
+
+            // Hide Content
+            headerLayout.visibility = View.GONE
+            searchContainer.visibility = View.GONE
+            recyclerView.visibility = View.GONE
+            actionFooter.visibility = View.GONE
+        } else {
+            loadingAnimationView.visibility = View.GONE
+            loadingAnimationView.cancelAnimation()
+
+            // Show Content
+            headerLayout.visibility = View.VISIBLE
+            searchContainer.visibility = View.VISIBLE
+            recyclerView.visibility = View.VISIBLE
+            actionFooter.visibility = View.VISIBLE
+        }
     }
 
     override fun onPause() {
         super.onPause()
-        // Pause animation when activity is paused
         if (::loadingAnimationView.isInitialized) {
             loadingAnimationView.pauseAnimation()
         }
@@ -336,22 +296,13 @@ class ContactSelectionScreen : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Resume animation when activity is resumed
-        if (::loadingAnimationView.isInitialized) {
-            try {
-                loadingAnimationView.playAnimation()
-            } catch (e: Exception) {
-                Toast.makeText(this, "Failed to resume animation: ${e.message}", Toast.LENGTH_LONG).show()
-                loadingAnimationView.visibility = View.GONE
-                // Restore UI elements as fallback
-                showLoading(false)
-            }
+        if (::loadingAnimationView.isInitialized && loadingAnimationView.visibility == View.VISIBLE) {
+            loadingAnimationView.playAnimation()
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        // Cancel animation when activity is destroyed
         if (::loadingAnimationView.isInitialized) {
             loadingAnimationView.cancelAnimation()
         }

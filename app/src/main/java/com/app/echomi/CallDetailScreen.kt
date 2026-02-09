@@ -5,28 +5,32 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.View
-import android.widget.ImageButton
+import android.widget.ImageView // Changed from ImageButton
 import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.app.echomi.Adapter.TranscriptAdapter
 import com.app.echomi.Network.RetrofitInstance
 import com.app.echomi.data.CallLog
+import com.google.android.material.appbar.MaterialToolbar
 import kotlinx.coroutines.launch
 import java.util.Date
+import java.util.Locale
 
 class CallDetailScreen : AppCompatActivity() {
     private var mediaPlayer: MediaPlayer? = null
     private val handler = Handler(Looper.getMainLooper())
     private lateinit var transcriptAdapter: TranscriptAdapter
     private lateinit var transcriptRecyclerView: RecyclerView
+
+    // Track player state manually since we are using a custom logic
+    private var isPlayerPrepared = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,7 +44,7 @@ class CallDetailScreen : AppCompatActivity() {
             return
         }
 
-        val toolbar: Toolbar = findViewById(R.id.toolbar)
+        val toolbar: MaterialToolbar = findViewById(R.id.toolbar)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         toolbar.setNavigationOnClickListener { finish() }
@@ -82,12 +86,12 @@ class CallDetailScreen : AppCompatActivity() {
         findViewById<TextView>(R.id.callerNumberTextView).text = log.callerNumber
         findViewById<TextView>(R.id.summaryTextView).text = log.summary ?: "No summary provided."
 
-        // Format the date better
+        // Format the date
         val formattedDate = try {
-            val date = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.getDefault()).parse(log.startTime)
-            java.text.SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", java.util.Locale.getDefault()).format(date ?: Date())
+            val date = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).parse(log.startTime)
+            java.text.SimpleDateFormat("MMM dd, yyyy 'at' hh:mm a", Locale.getDefault()).format(date ?: Date())
         } catch (e: Exception) {
-            log.startTime.substring(0, 10) // fallback
+            log.startTime.take(10) // fallback
         }
         findViewById<TextView>(R.id.dateTimeTextView).text = formattedDate
 
@@ -99,43 +103,54 @@ class CallDetailScreen : AppCompatActivity() {
         // Display transcript
         if (log.transcript.isNotEmpty()) {
             transcriptAdapter.updateTranscript(log.transcript)
-            findViewById<TextView>(R.id.transcriptHeaderTextView)?.text = "Conversation Transcript (${log.transcript.size} messages)"
-        } else {
-            findViewById<TextView>(R.id.transcriptHeaderTextView)?.text = "No transcript available"
+            // Note: Header text is hardcoded as "TRANSCRIPT LOG" in new XML,
+            // but you can update it dynamically if you wish:
+            // findViewById<TextView>(R.id.transcriptHeaderTextView)?.text = "TRANSCRIPT LOG (${log.transcript.size})"
         }
     }
 
     private fun setupMediaPlayer(url: String) {
         val playerLayout: LinearLayout = findViewById(R.id.recordingPlayerLayout)
-        val playPauseButton: ImageButton = findViewById(R.id.playPauseButton)
+
+        // FIX: Cast to ImageView instead of ImageButton
+        val playPauseButton: ImageView = findViewById(R.id.playPauseButton)
         val seekBar: SeekBar = findViewById(R.id.seekBar)
+
         playerLayout.visibility = View.VISIBLE
 
         mediaPlayer = MediaPlayer().apply {
-            setDataSource(url)
-            prepareAsync()
-            setOnPreparedListener { mp ->
-                seekBar.max = mp.duration
-                playPauseButton.setOnClickListener {
-                    if (isPlaying) {
-                        pause()
-                        playPauseButton.setImageResource(R.drawable.play) // Change to your play icon
-                    } else {
-                        start()
-                        playPauseButton.setImageResource(R.drawable.pause) // Change to your pause icon
-                        updateSeekBar()
-                    }
+            try {
+                setDataSource(url)
+                prepareAsync()
+                setOnPreparedListener { mp ->
+                    isPlayerPrepared = true
+                    seekBar.max = mp.duration
                 }
+                setOnCompletionListener {
+                    playPauseButton.setImageResource(R.drawable.play)
+                    seekBar.progress = 0
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@CallDetailScreen, "Audio Error", Toast.LENGTH_SHORT).show()
             }
-            setOnCompletionListener {
-                playPauseButton.setImageResource(R.drawable.play)
-                seekBar.progress = 0
+        }
+
+        playPauseButton.setOnClickListener {
+            if (!isPlayerPrepared || mediaPlayer == null) return@setOnClickListener
+
+            if (mediaPlayer!!.isPlaying) {
+                mediaPlayer!!.pause()
+                playPauseButton.setImageResource(R.drawable.play) // Ensure you have ic_play or play drawable
+            } else {
+                mediaPlayer!!.start()
+                playPauseButton.setImageResource(R.drawable.pause) // Ensure you have ic_pause or pause drawable
+                updateSeekBar()
             }
         }
 
         seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
-                if (fromUser) mediaPlayer?.seekTo(progress)
+                if (fromUser && isPlayerPrepared) mediaPlayer?.seekTo(progress)
             }
             override fun onStartTrackingTouch(sb: SeekBar?) {}
             override fun onStopTrackingTouch(sb: SeekBar?) {}
@@ -153,5 +168,6 @@ class CallDetailScreen : AppCompatActivity() {
         super.onDestroy()
         mediaPlayer?.release()
         mediaPlayer = null
+        handler.removeCallbacksAndMessages(null)
     }
 }

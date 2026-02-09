@@ -50,7 +50,7 @@
         <activity
             android:name=".ApprovalActivity"
             android:exported="true"
-            android:theme="@style/Theme.AppCompat.Light.Dialog.Alert" />
+            android:theme="@style/Theme.EchoMi"/>
 
         <receiver
             android:name=".Services.ApprovalReceiver"

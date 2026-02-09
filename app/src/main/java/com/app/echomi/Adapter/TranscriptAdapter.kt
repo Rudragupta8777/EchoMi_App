@@ -4,16 +4,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.app.echomi.R
 import com.app.echomi.data.TranscriptMessage
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.text.isLowerCase
-import kotlin.text.lowercase
-import kotlin.text.replaceFirstChar
-import kotlin.text.substring
-import kotlin.text.titlecase
 
 class TranscriptAdapter : RecyclerView.Adapter<TranscriptAdapter.TranscriptViewHolder>() {
 
@@ -31,56 +27,51 @@ class TranscriptAdapter : RecyclerView.Adapter<TranscriptAdapter.TranscriptViewH
     }
 
     override fun getItemViewType(position: Int): Int {
-        return when (transcript[position].speaker.lowercase()) {
-            "caller" -> VIEW_TYPE_CALLER
-            "ai" -> VIEW_TYPE_AI
-            else -> VIEW_TYPE_CALLER // Default to caller layout
+        val speaker = transcript[position].speaker.lowercase(Locale.getDefault())
+        return if (speaker.contains("ai") || speaker.contains("assistant")) {
+            VIEW_TYPE_AI
+        } else {
+            VIEW_TYPE_CALLER
         }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TranscriptViewHolder {
-        val layoutRes = when (viewType) {
-            VIEW_TYPE_CALLER -> R.layout.item_transcript_message_left
-            VIEW_TYPE_AI -> R.layout.item_transcript_message_right
-            else -> R.layout.item_transcript_message_left
+        // Use the new layout files from the Obsidian theme
+        val layoutRes = if (viewType == VIEW_TYPE_AI) {
+            R.layout.item_transcript_message_right
+        } else {
+            R.layout.item_transcript_message_left
         }
 
-        val view = LayoutInflater.from(parent.context)
-            .inflate(layoutRes, parent, false)
+        val view = LayoutInflater.from(parent.context).inflate(layoutRes, parent, false)
         return TranscriptViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: TranscriptViewHolder, position: Int) {
         val message = transcript[position]
+        val context = holder.itemView.context
 
-        // Set speaker name with appropriate styling
-        when (message.speaker.lowercase()) {
-            "caller" -> {
-                holder.speakerText.text = "Caller"
-                holder.speakerText.setTextColor(holder.itemView.context.getColor(R.color.caller_color))
-            }
-            "ai" -> {
-                holder.speakerText.text = "AI Assistant"
-                holder.speakerText.setTextColor(holder.itemView.context.getColor(R.color.ai_color))
-            }
-            else -> {
-                holder.speakerText.text = message.speaker.replaceFirstChar {
-                    if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString()
-                }
-                holder.speakerText.setTextColor(holder.itemView.context.getColor(R.color.default_speaker_color))
-            }
+        // Set Speaker Name & Color based on type
+        if (getItemViewType(position) == VIEW_TYPE_AI) {
+            holder.speakerText.text = "AI ASSISTANT"
+            // Use the new emerald green for AI
+            holder.speakerText.setTextColor(ContextCompat.getColor(context, R.color.terminal_green))
+        } else {
+            holder.speakerText.text = "INCOMING CALLER"
+            // Use secondary text color for Caller
+            holder.speakerText.setTextColor(ContextCompat.getColor(context, R.color.text_secondary))
         }
 
         holder.messageText.text = message.text
 
-        // Format timestamp
-        val formattedTime = try {
+        // Format timestamp for the "Tech" look (e.g., "14:30")
+        try {
             val date = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).parse(message.timestamp)
-            SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(date ?: Date())
+            val formattedTime = SimpleDateFormat("HH:mm", Locale.getDefault()).format(date ?: Date())
+            holder.timestampText.text = formattedTime
         } catch (e: Exception) {
-            message.timestamp.substring(11, 19) // fallback to extract time part
+            holder.timestampText.text = "00:00"
         }
-        holder.timestampText.text = formattedTime
     }
 
     override fun getItemCount() = transcript.size

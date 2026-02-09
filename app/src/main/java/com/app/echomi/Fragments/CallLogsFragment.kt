@@ -9,7 +9,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
-import android.widget.TextView
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -28,7 +28,7 @@ class CallLogsFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var adapter: CallLogsAdapter
     private lateinit var loadingAnimationView: LottieAnimationView
-    private lateinit var emptyStateTextView: TextView
+    private lateinit var emptyStateContainer: LinearLayout
     private lateinit var searchEditText: EditText
 
     companion object {
@@ -43,13 +43,12 @@ class CallLogsFragment : Fragment() {
 
         recyclerView = view.findViewById(R.id.callLogsRecyclerView)
         loadingAnimationView = view.findViewById(R.id.loadingAnimationView)
-        emptyStateTextView = view.findViewById(R.id.emptyStateTextView)
+        emptyStateContainer = view.findViewById(R.id.emptyStateTextView) // This is the LinearLayout container
         searchEditText = view.findViewById(R.id.searchEditText)
 
         setupRecyclerView()
         setupSearch()
 
-        // Check and request contacts permission
         checkContactsPermission()
 
         return view
@@ -58,9 +57,10 @@ class CallLogsFragment : Fragment() {
     private fun setupRecyclerView() {
         adapter = CallLogsAdapter(mutableListOf(), { clickedLog ->
             val intent = Intent(activity, CallDetailScreen::class.java)
+            // FIX: Changed from .id to ._id
             intent.putExtra("CALL_ID", clickedLog._id)
             startActivity(intent)
-        }, requireContext()) // Pass context to adapter
+        }, requireContext())
 
         recyclerView.adapter = adapter
         recyclerView.layoutManager = LinearLayoutManager(context)
@@ -69,38 +69,31 @@ class CallLogsFragment : Fragment() {
     private fun setupSearch() {
         searchEditText.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 adapter.filter.filter(s)
             }
-
             override fun afterTextChanged(s: Editable?) {}
         })
     }
 
     private fun checkContactsPermission() {
+        if (context == null) return
+
         when {
             ContextCompat.checkSelfPermission(
                 requireContext(),
                 android.Manifest.permission.READ_CONTACTS
             ) == PackageManager.PERMISSION_GRANTED -> {
-                // Permission already granted, fetch call logs
                 fetchCallLogs()
             }
             ActivityCompat.shouldShowRequestPermissionRationale(
                 requireActivity(),
                 android.Manifest.permission.READ_CONTACTS
             ) -> {
-                // Explain why permission is needed
-                Toast.makeText(
-                    context,
-                    "Contact permission is needed to display contact names",
-                    Toast.LENGTH_LONG
-                ).show()
+                Toast.makeText(context, "Contact permission needed for names", Toast.LENGTH_LONG).show()
                 requestContactsPermission()
             }
             else -> {
-                // Request the permission
                 requestContactsPermission()
             }
         }
@@ -121,77 +114,74 @@ class CallLogsFragment : Fragment() {
         when (requestCode) {
             CONTACTS_PERMISSION_REQUEST_CODE -> {
                 if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
-                    // Permission granted, fetch call logs
                     fetchCallLogs()
                 } else {
-                    // Permission denied, fetch logs anyway (will show numbers instead of names)
-                    Toast.makeText(
-                        context,
-                        "Contact names won't be displayed due to missing permission",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    fetchCallLogs()
+                    fetchCallLogs() // Fetch anyway, just without names
                 }
             }
-            else -> {
-                super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-            }
+            else -> super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         }
     }
 
     private fun fetchCallLogs() {
-        loadingAnimationView.visibility = View.VISIBLE
-        emptyStateTextView.visibility = View.GONE
-        recyclerView.visibility = View.GONE
-
+        showLoading(true)
         lifecycleScope.launch {
             try {
                 val response = RetrofitInstance.api.getCallLogs()
                 if (response.isSuccessful) {
                     val logs = response.body()
                     if (logs.isNullOrEmpty()) {
-                        emptyStateTextView.visibility = View.VISIBLE
+                        showEmptyState(true)
                     } else {
                         adapter.updateLogs(logs)
-                        recyclerView.visibility = View.VISIBLE
+                        showEmptyState(false)
                     }
                 } else {
                     Toast.makeText(context, "Failed to load logs", Toast.LENGTH_SHORT).show()
-                    emptyStateTextView.visibility = View.VISIBLE
+                    showEmptyState(true)
                 }
             } catch (e: Exception) {
                 Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                emptyStateTextView.visibility = View.VISIBLE
+                showEmptyState(true)
             } finally {
-                loadingAnimationView.visibility = View.GONE
+                showLoading(false)
             }
         }
     }
 
-    // Rest of your existing methods (onPause, onResume, onDestroyView) remain the same
-    override fun onPause() {
-        super.onPause()
-        if (::loadingAnimationView.isInitialized) {
-            loadingAnimationView.pauseAnimation()
+    private fun showLoading(isLoading: Boolean) {
+        if (isLoading) {
+            loadingAnimationView.visibility = View.VISIBLE
+            loadingAnimationView.playAnimation()
+            emptyStateContainer.visibility = View.GONE
+            recyclerView.visibility = View.GONE
+        } else {
+            loadingAnimationView.visibility = View.GONE
+            loadingAnimationView.cancelAnimation()
+        }
+    }
+
+    private fun showEmptyState(isEmpty: Boolean) {
+        if (isEmpty) {
+            emptyStateContainer.visibility = View.VISIBLE
+            recyclerView.visibility = View.GONE
+        } else {
+            emptyStateContainer.visibility = View.GONE
+            recyclerView.visibility = View.VISIBLE
         }
     }
 
     override fun onResume() {
         super.onResume()
-        if (::loadingAnimationView.isInitialized) {
-            try {
-                loadingAnimationView.playAnimation()
-            } catch (e: Exception) {
-                Toast.makeText(context, "Failed to resume animation: ${e.message}", Toast.LENGTH_LONG).show()
-                loadingAnimationView.visibility = View.GONE
-            }
+        if (::loadingAnimationView.isInitialized && loadingAnimationView.visibility == View.VISIBLE) {
+            loadingAnimationView.playAnimation()
         }
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
+    override fun onPause() {
+        super.onPause()
         if (::loadingAnimationView.isInitialized) {
-            loadingAnimationView.cancelAnimation()
+            loadingAnimationView.pauseAnimation()
         }
     }
 }

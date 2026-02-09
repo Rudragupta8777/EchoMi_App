@@ -7,8 +7,7 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import android.widget.ImageView
-import android.widget.TextView
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -34,11 +33,11 @@ import kotlinx.coroutines.tasks.await
 class LoginScreen : AppCompatActivity() {
     private lateinit var auth: FirebaseAuth
     private lateinit var googleSignInClient: GoogleSignInClient
+
+    // UI Elements
     private lateinit var signInButton: MaterialButton
     private lateinit var loadingAnimationView: LottieAnimationView
-    private lateinit var backgroundImageView: ImageView
-    private lateinit var logoImageView: ImageView
-    private lateinit var taglineTextView: TextView
+    private lateinit var contentContainer: LinearLayout
 
     companion object {
         private const val TAG = "LoginActivity"
@@ -63,59 +62,50 @@ class LoginScreen : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_login_screen)
 
-        // Check if user is already logged in (shouldn't happen, but just in case)
+        // Check if user is already logged in
         auth = Firebase.auth
         if (auth.currentUser != null) {
-            // User is already logged in, navigate to MainActivity
             navigateToMainActivity()
             return
         }
 
+        checkPermissions()
+        initializeViews()
+        setupGoogleSignIn()
+
+        signInButton.setOnClickListener {
+            signIn()
+        }
+    }
+
+    private fun initializeViews() {
+        signInButton = findViewById(R.id.signInButton)
+        loadingAnimationView = findViewById(R.id.loadingAnimationView)
+        contentContainer = findViewById(R.id.contentContainer)
+
+        // Configure Lottie
+        try {
+            loadingAnimationView.speed = 1.0f
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load animation: ${e.message}")
+            loadingAnimationView.visibility = View.GONE
+        }
+    }
+
+    private fun checkPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS), 101)
             }
         }
+    }
 
-        // Initialize views
-        backgroundImageView = findViewById(R.id.backgroundImageView)
-        logoImageView = findViewById(R.id.logoImageView)
-        taglineTextView = findViewById(R.id.taglineTextView)
-        signInButton = findViewById(R.id.signInButton)
-        loadingAnimationView = findViewById(R.id.loadingAnimationView)
-
-        // Configure Lottie animation with error handling
-        try {
-            loadingAnimationView.speed = 1.0f
-            loadingAnimationView.playAnimation() // Ensure animation plays (redundant with autoPlay=true)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to load animation: ${e.message}")
-            loadingAnimationView.visibility = View.GONE // Hide animation on failure
-        }
-
-        // Add failure listener for Lottie animation
-        loadingAnimationView.addLottieOnCompositionLoadedListener { composition ->
-            if (composition == null) {
-                Log.e(TAG, "Failed to load Lottie animation")
-                loadingAnimationView.visibility = View.GONE // Hide animation on failure
-                // Restore UI elements as fallback
-                backgroundImageView.visibility = View.VISIBLE
-                logoImageView.visibility = View.VISIBLE
-                taglineTextView.visibility = View.VISIBLE
-                signInButton.visibility = View.VISIBLE
-            }
-        }
-
-        // Configure Google Sign In
+    private fun setupGoogleSignIn() {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(getString(R.string.default_web_client_id))
             .requestEmail()
             .build()
         googleSignInClient = GoogleSignIn.getClient(this, gso)
-
-        signInButton.setOnClickListener {
-            signIn()
-        }
     }
 
     private fun signIn() {
@@ -140,10 +130,9 @@ class LoginScreen : AppCompatActivity() {
 
                 val response = RetrofitInstance.api.loginWithFirebase(request)
                 if (response.isSuccessful) {
-                    // Login successful, navigate to MainActivity
-                    Toast.makeText(this@LoginScreen, "Login Successful!", Toast.LENGTH_SHORT).show()
-                    navigateToMainActivity()
                     Log.d(TAG, "Login successful, navigating to MainActivity ✅")
+                    Toast.makeText(this@LoginScreen, "Access Granted", Toast.LENGTH_SHORT).show()
+                    navigateToMainActivity()
                 } else {
                     throw Exception("Backend login failed")
                 }
@@ -151,8 +140,6 @@ class LoginScreen : AppCompatActivity() {
                 Log.e(TAG, "Firebase/Backend auth failed", e)
                 showLoading(false)
                 Toast.makeText(this@LoginScreen, "Authentication Failed.", Toast.LENGTH_SHORT).show()
-
-                // Sign out if backend login fails
                 auth.signOut()
                 googleSignInClient.signOut()
             }
@@ -167,16 +154,19 @@ class LoginScreen : AppCompatActivity() {
     }
 
     private fun showLoading(isLoading: Boolean) {
-        loadingAnimationView.visibility = if (isLoading) View.VISIBLE else View.GONE
-        backgroundImageView.visibility = if (isLoading) View.GONE else View.VISIBLE
-        logoImageView.visibility = if (isLoading) View.GONE else View.VISIBLE
-        taglineTextView.visibility = if (isLoading) View.GONE else View.VISIBLE
-        signInButton.visibility = if (isLoading) View.GONE else View.VISIBLE
+        if (isLoading) {
+            contentContainer.visibility = View.GONE
+            loadingAnimationView.visibility = View.VISIBLE
+            loadingAnimationView.playAnimation()
+        } else {
+            contentContainer.visibility = View.VISIBLE
+            loadingAnimationView.visibility = View.GONE
+            loadingAnimationView.cancelAnimation()
+        }
     }
 
     override fun onPause() {
         super.onPause()
-        // Pause animation when activity is paused
         if (::loadingAnimationView.isInitialized) {
             loadingAnimationView.pauseAnimation()
         }
@@ -184,25 +174,13 @@ class LoginScreen : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Resume animation when activity is resumed
-        if (::loadingAnimationView.isInitialized) {
-            try {
-                loadingAnimationView.playAnimation()
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to resume animation: ${e.message}")
-                loadingAnimationView.visibility = View.GONE
-                // Restore UI elements as fallback
-                backgroundImageView.visibility = View.VISIBLE
-                logoImageView.visibility = View.VISIBLE
-                taglineTextView.visibility = View.VISIBLE
-                signInButton.visibility = View.VISIBLE
-            }
+        if (::loadingAnimationView.isInitialized && loadingAnimationView.visibility == View.VISIBLE) {
+            loadingAnimationView.playAnimation()
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        // Cancel animation when activity is destroyed
         if (::loadingAnimationView.isInitialized) {
             loadingAnimationView.cancelAnimation()
         }

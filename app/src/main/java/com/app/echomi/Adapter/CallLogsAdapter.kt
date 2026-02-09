@@ -6,32 +6,26 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Filter
 import android.widget.Filterable
-import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.app.echomi.data.CallLog
 import com.app.echomi.R
 import com.app.echomi.Services.ContactHelper
+import com.app.echomi.data.CallLog
 import java.util.*
-import kotlin.text.contains
-import kotlin.text.isNullOrEmpty
-import kotlin.text.lowercase
-import kotlin.text.substring
-import kotlin.text.trim
 
 class CallLogsAdapter(
     private var logs: MutableList<CallLog>,
     private val onItemClick: (CallLog) -> Unit,
-    private val context: Context // Add context parameter
+    private val context: Context
 ) : RecyclerView.Adapter<CallLogsAdapter.LogViewHolder>(), Filterable {
 
     private var fullLogsList: List<CallLog> = ArrayList(logs)
 
+    // Updated ViewHolder to match the new "Obsidian" item_call_log.xml
     class LogViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val callerNumber: TextView = view.findViewById(R.id.callerNumberTextView)
-        val summary: TextView = view.findViewById(R.id.summaryTextView)
-        val date: TextView = view.findViewById(R.id.dateTextView)
-        val icon: ImageView = view.findViewById(R.id.callerTypeIcon)
+        val callerName: TextView = view.findViewById(R.id.callerName)
+        val callTime: TextView = view.findViewById(R.id.callTime)
+        // Note: Summary removed from list view for cleaner "Tech" look
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): LogViewHolder {
@@ -43,14 +37,21 @@ class CallLogsAdapter(
     override fun onBindViewHolder(holder: LogViewHolder, position: Int) {
         val log = logs[position]
 
-        // Get contact name if available, otherwise use number
+        // 1. Set Name (Or Number if name not found)
         val displayName = getContactDisplayName(log.callerNumber)
-        holder.callerNumber.text = displayName
+        holder.callerName.text = displayName
 
-        holder.summary.text = log.summary ?: "No summary available."
-        holder.date.text = log.startTime.substring(0, 10)
+        // 2. Set Time with "Tech" formatting
+        // Assumes format like "2023-10-27T10:30:00..."
+        val timeString = try {
+            val time = log.startTime.substring(11, 16) // Extract HH:MM
+            "$time • SYSTEM"
+        } catch (e: Exception) {
+            "UNKNOWN • SYSTEM"
+        }
+        holder.callTime.text = timeString
 
-        // Set the click listener on the item view
+        // 3. Click Listener
         holder.itemView.setOnClickListener {
             onItemClick(log)
         }
@@ -77,10 +78,10 @@ class CallLogsAdapter(
             } else {
                 val filterPattern = constraint.toString().lowercase(Locale.getDefault()).trim()
                 for (item in fullLogsList) {
-                    // Search in both displayed name and original number
                     val displayName = getContactDisplayName(item.callerNumber).lowercase(Locale.getDefault())
                     val originalNumber = item.callerNumber.lowercase(Locale.getDefault())
 
+                    // Filter matches logic
                     if (displayName.contains(filterPattern) ||
                         originalNumber.contains(filterPattern) ||
                         item.summary?.lowercase(Locale.getDefault())?.contains(filterPattern) == true) {
@@ -93,6 +94,7 @@ class CallLogsAdapter(
             return results
         }
 
+        @Suppress("UNCHECKED_CAST")
         override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
             logs.clear()
             if (results?.values is List<*>) {

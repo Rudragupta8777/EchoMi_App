@@ -1,62 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background"
-    tools:context=".MainActivity">
-
-    <ImageView
-        android:id="@+id/backgroundImageView"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:src="@drawable/bg"
-        android:scaleType="centerCrop"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+    android:paddingTop="40dp"
+    android:background="@color/background_obsidian">
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/nav_host_fragment"
         android:name="androidx.navigation.fragment.NavHostFragment"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginTop="40dp"
+        android:layout_height="0dp"
         app:defaultNavHost="true"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/nav"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/navContainer"
         app:navGraph="@navigation/nav_graph" />
 
-
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/nav"
-        android:layout_width="0dp"
+    <FrameLayout
+        android:id="@+id/navContainer"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginStart="15dp"
-        android:layout_marginBottom="20dp"
-        android:layout_marginEnd="15dp"
-        android:backgroundTint="@android:color/transparent"
-        app:strokeWidth="0dp"
-        app:cardCornerRadius="15dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
+        android:padding="16dp"
+        android:background="@drawable/gradient_bottom_fade"
+        app:layout_constraintBottom_toBottomOf="parent">
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottom_navigation"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/navigation_bar"
+            android:background="@drawable/bg_tech_card"
+            android:elevation="8dp"
             app:itemIconTint="@color/bottom_nav_color_selector"
             app:itemTextColor="@color/bottom_nav_color_selector"
-            app:itemGravity="center"
+            app:itemRippleColor="@color/terminal_green"
             app:menu="@menu/bottom_nav_menu"
-            app:itemActiveIndicatorStyle="@style/CustomBottomNavIndicator"
-            app:labelVisibilityMode="labeled"/>
-    </com.google.android.material.card.MaterialCardView>
+            app:labelVisibilityMode="selected"/>
+    </FrameLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
