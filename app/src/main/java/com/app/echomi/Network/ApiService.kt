@@ -78,4 +78,9 @@ interface ApiService {
         @Body request: ApprovalRequest
     ): Response<ApprovalStatus>
 
+    // Add this inside your ApiService interface
+    @POST("api/auth/set-delivery-location")
+    suspend fun setDeliveryLocation(
+        @Body request: LocationRequest
+    ): Response<Any> // Using Any since we just need to check if response.isSuccessful
 }

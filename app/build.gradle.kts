@@ -87,9 +87,11 @@ dependencies {
 
     implementation("androidx.lifecycle:lifecycle-service:2.8.4")
 
-// Add this line for the BlurView library
+    // Add this line for the BlurView library
     implementation("com.github.Dimezis:BlurView:version-2.0.3")
 
     // build.gradle.kts (Module :app)
     implementation("com.airbnb.android:lottie:6.5.0")
+
+    implementation("com.google.android.gms:play-services-location:21.0.1")
 }

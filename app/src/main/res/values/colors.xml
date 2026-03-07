@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="background_obsidian">#050505</color> <color name="surface_glass">#1A1A1A</color>
+    <color name="background_obsidian">#050505</color>
+    <color name="surface_glass">#1A1A1A</color>
 
-    <color name="terminal_green">#00E676</color> <color name="deep_forest">#0D2818</color> <color name="subtle_border">#2A2A2A</color>
+    <color name="terminal_green">#00E676</color>
+    <color name="deep_forest">#0D2818</color>
+    <color name="subtle_border">#2A2A2A</color>
     <color name="glass_highlight">#20FFFFFF</color>
 
     <color name="text_primary">#F0F0F0</color>

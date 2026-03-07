@@ -130,9 +130,22 @@ class LoginScreen : AppCompatActivity() {
 
                 val response = RetrofitInstance.api.loginWithFirebase(request)
                 if (response.isSuccessful) {
-                    Log.d(TAG, "Login successful, navigating to MainActivity ✅")
+                    val userResponse = response.body()
+                    Log.d(TAG, "Login successful ✅")
                     Toast.makeText(this@LoginScreen, "Access Granted", Toast.LENGTH_SHORT).show()
-                    navigateToMainActivity()
+
+                    // --- NEW LOGIC HERE ---
+                    if (userResponse?.needsDeliveryLocation == true) {
+                        // User needs to set location -> Go to new screen
+                        val intent = Intent(this@LoginScreen, LocationSetupScreen::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                        startActivity(intent)
+                        finish()
+                    } else {
+                        // Location already set -> Go to SetupScreen
+                        navigateToMainActivity()
+                    }
+                    // ----------------------
                 } else {
                     throw Exception("Backend login failed")
                 }
