@@ -1,70 +1,81 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_obsidian">
 
-    <View
-        android:layout_width="300dp"
-        android:layout_height="300dp"
-        android:background="@drawable/bg_glow_emerald"
-        android:alpha="0.15"
-        android:translationX="-100dp"
-        android:translationY="200dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"/>
-
     <LinearLayout
         android:id="@+id/contentContainer"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical"
-        android:padding="32dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:padding="24dp">
 
-        <ImageView
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:src="@drawable/assistant"
-            android:layout_gravity="center"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layout_marginTop="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="DELIVERY TARGET"
+                android:textSize="24sp"
+                android:letterSpacing="0.1"
+                android:fontFamily="sans-serif-black"
+                android:textColor="@color/text_primary"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Drag the map to align the crosshair with your exact drop-off coordinates."
+                android:textSize="12sp"
+                android:fontFamily="monospace"
+                android:letterSpacing="0.05"
+                android:textAlignment="center"
+                android:layout_marginTop="8dp"
+                android:textColor="@color/text_secondary"/>
+        </LinearLayout>
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="24dp"
             android:layout_marginBottom="24dp"
-            app:tint="@color/terminal_green"/>
+            android:background="@drawable/bg_input_glass"
+            android:padding="2dp">
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="DELIVERY TARGET"
-            android:textSize="28sp"
-            android:letterSpacing="0.1"
-            android:fontFamily="sans-serif-black"
-            android:textAlignment="center"
-            android:textColor="@color/text_primary"/>
+            <com.mapbox.maps.MapView
+                android:id="@+id/mapView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:mapbox_cameraZoom="15.0" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="To help delivery personnel navigate to your location precisely, EchoMi needs your exact coordinates."
-            android:textSize="12sp"
-            android:fontFamily="monospace"
-            android:letterSpacing="0.05"
-            android:textAlignment="center"
-            android:layout_marginTop="16dp"
-            android:textColor="@color/text_secondary"
-            android:layout_marginBottom="48dp"/>
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_cyber_crosshair"
+                android:elevation="5dp"/>
+        </FrameLayout>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnDetectLocation"
             android:layout_width="match_parent"
             android:layout_height="60dp"
-            android:text="DETECT MY COORDINATES"
+            android:text="CONFIRM TARGET COORDINATES"
             android:textSize="14sp"
             android:textColor="@color/background_obsidian"
             android:textStyle="bold"
             android:fontFamily="monospace"
             android:letterSpacing="0.05"
             android:background="@drawable/bg_button_emerald"
+            android:layout_marginBottom="16dp"
             app:backgroundTint="@null" />
 
     </LinearLayout>

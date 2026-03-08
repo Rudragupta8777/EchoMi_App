@@ -26,13 +26,13 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
+        // Expose Backend URL
         val backendUrl = localProperties.getProperty("BACKEND_URL") ?: "https://dev.placeholder-url.com/"
         buildConfigField("String", "BACKEND_URL", "\"$backendUrl\"")
-    }
 
-    buildFeatures {
-        viewBinding = true
-        buildConfig = true
+        // Expose Mapbox Public Token to the app
+        val mapboxToken = localProperties.getProperty("MAPBOX_ACCESS_TOKEN") ?: ""
+        buildConfigField("String", "MAPBOX_ACCESS_TOKEN", "\"$mapboxToken\"")
     }
 
     buildTypes {
@@ -53,11 +53,11 @@ android {
     }
     buildFeatures {
         viewBinding = true
+        buildConfig = true
     }
 }
 
 dependencies {
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -69,29 +69,29 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
-    // Networking with Retrofit and Gson
+    // Networking
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.9.3")
 
-    // Coroutines for asynchronous programming
+    // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0") // ViewModel scope
+    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:2.7.0")
 
-    // Firebase Authentication
+    // Firebase
     implementation(platform("com.google.firebase:firebase-bom:33.5.0"))
     implementation("com.google.firebase:firebase-auth-ktx")
-    implementation("com.google.android.gms:play-services-auth:21.2.0") // For Google Sign-In
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("com.google.firebase:firebase-analytics-ktx")
 
     implementation("androidx.lifecycle:lifecycle-service:2.8.4")
-
-    // Add this line for the BlurView library
     implementation("com.github.Dimezis:BlurView:version-2.0.3")
-
-    // build.gradle.kts (Module :app)
     implementation("com.airbnb.android:lottie:6.5.0")
 
-    implementation("com.google.android.gms:play-services-location:21.0.1")
+    // Location
+    implementation("com.google.android.gms:play-services-location:21.1.0")
+
+    // Replace Google Maps with Mapbox
+    implementation("com.mapbox.maps:android:11.2.0")
 }
